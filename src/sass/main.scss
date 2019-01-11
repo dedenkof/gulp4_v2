@@ -1,9 +1,24 @@
 /*
 * Third Party
 */
-@import "../../node_modules/normalize.css/normalize.css";
+//@import "../../node_modules/normalize.css/normalize.css";
 
 /*
 * Custom
 */
-@import "partials/app";
+//@import "partials/app";
+
+$font-stack:    Helvetica, sans-serif;
+$primary-color: #333;
+$link-color: #b624ff;
+
+body {
+    font: 100% $font-stack;
+    color: $primary-color;
+}
+
+a {
+    color: $link-color;
+    text-decoration: underline;
+    text-align: center;
+}
