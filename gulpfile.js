@@ -1,10 +1,12 @@
 'use strict';
 
-const gulp = require('gulp');
+const gulp = require('gulp'),
+    concat = require('gulp-concat');
 
 // style
 function styles(){
     return gulp.src('./src/css/**/*.css')
+        .pipe(concat('general.css'))
         .pipe(gulp.dest('build/css'));
 }
 
