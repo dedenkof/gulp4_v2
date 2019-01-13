@@ -1,12 +1,4 @@
-/*
-* Third Party
-*/
-//@import "../../node_modules/normalize.css/normalize.css";
-
-/*
-* Custom
-*/
-//@import "partials/app";
+@import "header", "basket", "catalog", "footer";
 
 $font-stack:    Helvetica, sans-serif;
 $primary-color: #333;

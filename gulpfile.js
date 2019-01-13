@@ -1,7 +1,20 @@
 'use strict';
 
 const gulp = require('gulp'),
-    concat = require('gulp-concat');
+    concat = require('gulp-concat'),
+    sass = require('gulp-sass'),
+    sourcemaps = require('gulp-sourcemaps'),
+    plumber = require('gulp-plumber');
+
+function sassF(){
+    return gulp.src('./src/sass/**/*.scss')
+        .pipe(plumber())
+        .pipe(sass())// компилим sass
+        .pipe(sourcemaps.init())
+        .pipe(sass().on('error', sass.logError))
+        .pipe(sourcemaps.write())
+        .pipe(gulp.dest('build/css'));
+}
 
 // style
 function styles(){
@@ -18,6 +31,7 @@ function scripts(){
 
 gulp.task('styles', styles);
 gulp.task('scripts', scripts);
+gulp.task('sassF', sassF);
 
 
 // Merge all css files in one
