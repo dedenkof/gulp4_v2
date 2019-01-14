@@ -6,7 +6,7 @@ const gulp = require('gulp'),
     sourcemaps = require('gulp-sourcemaps'),
     plumber = require('gulp-plumber');
 
-function sassF(){
+function preproc(){
     return gulp.src('./src/sass/**/*.scss')
         .pipe(plumber())
         .pipe(sass())// компилим sass
@@ -31,7 +31,7 @@ function scripts(){
 
 gulp.task('styles', styles);
 gulp.task('scripts', scripts);
-gulp.task('sassF', sassF);
+gulp.task('preproc', preproc);
 
 
 // Merge all css files in one
