@@ -1,16 +1,19 @@
-@import "header", "basket", "catalog", "footer";
+// *** Vendors ***
+@import './vendor/reset';
 
-$font-stack:    Helvetica, sans-serif;
-$primary-color: #333;
-$link-color: #b624ff;
+// *** Utils ***
+@import './utils/bootstrap/bootstrap';
 
-body {
-    font: 100% $font-stack;
-    color: $primary-color;
-}
+// *** Base ***
+@import './base/settings';
+@import './base/core';
+@import './base/colors';
+@import './base/typography';
 
-a {
-    color: $link-color;
-    text-decoration: underline;
-    text-align: center;
-}
+// *** Partials ***
+@import './partials/header';
+@import './partials/footer';
+@import './partials/sidebar';
+@import './partials/catalog';
+@import './partials/basket';
+@import './partials/button';

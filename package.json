@@ -4,11 +4,14 @@
   "main": "gulpfile.js",
   "dependencies": {},
   "devDependencies": {
+    "browser-sync": "^2.26.3",
     "gulp": "github:gulpjs/gulp#v4.0.0-alpha.3",
     "gulp-autoprefixer": "^6.0.0",
+    "gulp-clean-css": "^4.0.0",
     "gulp-concat": "^2.6.1",
     "gulp-group-css-media-queries": "^1.2.2",
     "gulp-plumber": "^1.2.1",
+    "gulp-rename": "^1.4.0",
     "gulp-sass": "^4.0.2",
     "gulp-sourcemaps": "^2.6.4"
   },
