@@ -11,3 +11,23 @@ header a{
     color: #cc3e4e;
     transition: all .25s ease-out;
 }
+
+.foo {
+    font-size: 18px;
+}
+
+@media (min-width: 767px) {
+    .foo {
+        font-size: 24px;
+    }
+}
+
+.bar {
+    margin-bottom: 20px;
+}
+
+@media (min-width: 767px) {
+    .bar {
+        margin-bottom: 30px;
+    }
+}
