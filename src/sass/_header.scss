@@ -3,4 +3,11 @@ header {
     background: #cc3e4e;
     text-align: center;
     height: 100px;
+
+}
+
+header a{
+    text-align: center;
+    color: #cc3e4e;
+    transition: all .25s ease-out;
 }

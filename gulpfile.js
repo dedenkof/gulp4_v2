@@ -1,6 +1,7 @@
 'use strict';
 
 const gulp = require('gulp'),
+    autoprefixer = require('gulp-autoprefixer'),
     concat = require('gulp-concat'),
     sass = require('gulp-sass'),
     sourcemaps = require('gulp-sourcemaps'),
@@ -12,6 +13,10 @@ function preproc(){
         .pipe(sass())// компилим sass
         .pipe(sourcemaps.init())
         .pipe(sass().on('error', sass.logError))
+        .pipe(autoprefixer({
+            browsers: ['> 0.1%'],
+            cascade: false
+        }))
         .pipe(sourcemaps.write())
         .pipe(gulp.dest('build/css'));
 }
@@ -19,6 +24,10 @@ function preproc(){
 // style
 function styles(){
     return gulp.src('./src/css/**/*.css')
+        .pipe(autoprefixer({
+            browsers: ['> 0.1%'],
+            cascade: false
+        }))
         .pipe(concat('general.css'))
         .pipe(gulp.dest('build/css'));
 }

@@ -5,6 +5,7 @@
   "dependencies": {},
   "devDependencies": {
     "gulp": "github:gulpjs/gulp#v4.0.0-alpha.3",
+    "gulp-autoprefixer": "^6.0.0",
     "gulp-concat": "^2.6.1",
     "gulp-plumber": "^1.2.1",
     "gulp-sass": "^4.0.2",
