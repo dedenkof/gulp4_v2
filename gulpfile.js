@@ -12,7 +12,8 @@ const gulp = require('gulp'),
     rename = require('gulp-rename'),
     includeFiles = require('gulp-rigger'),
     browserSync = require('browser-sync'),
-    inject = require('gulp-inject');
+    inject = require('gulp-inject'),
+    rimraf = require('rimraf');
 
 const path = {
     build: { //Тут мы укажем куда складывать готовые после сборки файлы
@@ -39,6 +40,7 @@ const path = {
         img: './src/img/**/*.*',
         fonts: './src/fonts/**/*.*'
     },
+    clean: './build'
 };
 
 const onError = function(err) {
@@ -134,8 +136,14 @@ gulp.task('index', function () {
     // It's not necessary to read the files (will speed up things), we're only after their paths:
     const sources = gulp.src([path.src.js, path.src.sass, path.src.css], {read: false});
 
+
     return target.pipe(includeFiles(sources)),
-            target.pipe(inject(sources))
+            target.pipe(inject(sources, {ignorePath: 'src', addRootSlash: false, relative: true }))
             .pipe(plumber({ errorHandler: onError }))
-            .pipe(gulp.dest('./build'));
+            .pipe(gulp.dest(path.build.html));
+});
+
+// Очистка
+gulp.task('clean', function (cb) {
+    rimraf(path.clean, cb);
 });

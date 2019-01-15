@@ -2,7 +2,9 @@
   "name": "gulp4_v2",
   "version": "1.0.0",
   "main": "gulpfile.js",
-  "dependencies": {},
+  "dependencies": {
+    "rimraf": "^2.6.3"
+  },
   "devDependencies": {
     "browser-sync": "^2.26.3",
     "gulp": "github:gulpjs/gulp#v4.0.0-alpha.3",
