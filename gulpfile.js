@@ -10,8 +10,9 @@ const gulp = require('gulp'),
     cleanCSS = require('gulp-clean-css'),
     minJS = require('gulp-uglify'),
     rename = require('gulp-rename'),
-    includeFile = require('gulp-rigger'),
-    browserSync = require('browser-sync');
+    includeFiles = require('gulp-rigger'),
+    browserSync = require('browser-sync'),
+    inject = require('gulp-inject');
 
 const path = {
     build: { //Тут мы укажем куда складывать готовые после сборки файлы
@@ -22,6 +23,7 @@ const path = {
         fonts: 'build/fonts/'
     },
     src: { //Пути откуда брать исходники
+        mainHTML: './src/index.html', //Синтаксис src/*.html говорит gulp что мы хотим взять все файлы с расширением .html
         html: './src/*.html', //Синтаксис src/*.html говорит gulp что мы хотим взять все файлы с расширением .html
         js: './src/js/**/*.js',//В стилях и скриптах нам понадобятся только main файлы
         css: './src/css/**/*.css',
@@ -51,6 +53,7 @@ const onError = function(err) {
 function preproc(){
     return gulp.src(path.src.sass)
         .pipe(plumber({ errorHandler: onError }))
+        .pipe(includeFiles())
         .pipe(sourcemaps.init())
         .pipe(sass())
         .pipe(sass().on('error', sass.logError))
@@ -75,6 +78,7 @@ function preproc(){
 function styles() {
     return gulp.src(path.src.css)
         .pipe(plumber({ errorHandler: onError }))
+        .pipe(includeFiles())
         .pipe(sourcemaps.init())
         .pipe(autoprefixer({
             browsers: ['> 0.1%'],
@@ -97,7 +101,7 @@ function styles() {
 function scripts(){
     return gulp.src(path.src.js)
         .pipe(plumber({ errorHandler: onError }))
-        .pipe(includeFile())
+        .pipe(includeFiles())
         .pipe(sourcemaps.init())
         .pipe(minJS()) //Сожмем наш js
         .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
@@ -123,4 +127,15 @@ gulp.task('webserver', function () {
         port: 9000,
         logPrefix: "Frontend_Pack"
     });
+});
+
+gulp.task('index', function () {
+    const target = gulp.src(path.src.html);
+    // It's not necessary to read the files (will speed up things), we're only after their paths:
+    const sources = gulp.src([path.src.js, path.src.sass, path.src.css], {read: false});
+
+    return target.pipe(includeFiles(sources)),
+            target.pipe(inject(sources))
+            .pipe(plumber({ errorHandler: onError }))
+            .pipe(gulp.dest('./build'));
 });
