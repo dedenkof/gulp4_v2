@@ -10,7 +10,8 @@ const gulp = require('gulp'),
     cleanCSS = require('gulp-clean-css'),
     minJS = require('gulp-uglify'),
     rename = require('gulp-rename'),
-    includeFile = require('gulp-rigger');
+    includeFile = require('gulp-rigger'),
+    browserSync = require('browser-sync');
 
 var path = {
     build: { //Тут мы укажем куда складывать готовые после сборки файлы
@@ -27,8 +28,17 @@ var path = {
         sass: './src/sass/**/*.scss',
         img: './src/img/**/*.*', //Синтаксис img/**/*.* означает - взять все файлы всех расширений из папки и из вложенных каталогов
         fonts: './src/fonts/**/*.*'
-    }
+    },
+    watch: { //Тут мы укажем, за изменением каких файлов мы хотим наблюдать
+        html: './src/**/*.html',
+        js: './src/js/**/*.js',
+        css: './src/css/**/*.scss',
+        sass: './src/sass/**/*.scss',
+        img: './src/img/**/*.*',
+        fonts: './src/fonts/**/*.*'
+    },
 };
+
 
 
 function preproc(){
@@ -48,6 +58,9 @@ function preproc(){
         }))
         .pipe(sourcemaps.write('../maps', {addComment: false}))
         .pipe(gulp.dest(path.build.css))
+        .pipe(browserSync.reload({
+            stream: true
+        }));
 
 }
 
@@ -68,6 +81,9 @@ function styles() {
         }))
         .pipe(sourcemaps.write('../maps', {addComment: false}))
         .pipe(gulp.dest(path.build.css))
+        .pipe(browserSync.reload({
+            stream: true
+        }));
 }
 
 // js
@@ -78,7 +94,11 @@ function scripts(){
         .pipe(sourcemaps.init())
         .pipe(minJS()) //Сожмем наш js
         .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
+        .pipe(sourcemaps.write('../maps', {addComment: false}))
         .pipe(gulp.dest(path.build.js))
+        .pipe(browserSync.reload({
+            stream: true
+        }));
 
 }
 
@@ -86,5 +106,15 @@ gulp.task('scripts', scripts);
 gulp.task('styles', styles);
 gulp.task('preproc', preproc);
 
-
-
+gulp.task('webserver', function (done) {
+    browserSync.init({
+        server: {
+            baseDir: "./build"
+        },
+        tunnel: true,
+        host: 'localhost',
+        port: 9000,
+        logPrefix: "Frontend_Pack"
+    });
+    done();
+});
