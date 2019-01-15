@@ -8,6 +8,7 @@ const gulp = require('gulp'),
     plumber = require('gulp-plumber'),
     gcmq = require('gulp-group-css-media-queries'),
     cleanCSS = require('gulp-clean-css'),
+    minJS = require('gulp-uglify'),
     rename = require('gulp-rename');
 
 var path = {
@@ -71,7 +72,11 @@ function styles() {
 // js
 function scripts(){
     return gulp.src(path.src.js)
-        .pipe(gulp.dest(path.build.css))
+        .pipe(plumber())
+        .pipe(sourcemaps.init())
+        .pipe(minJS()) //Сожмем наш js
+        .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
+        .pipe(gulp.dest(path.build.js))
 
 }
 
