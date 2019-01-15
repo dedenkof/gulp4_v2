@@ -13,7 +13,7 @@ const gulp = require('gulp'),
     includeFile = require('gulp-rigger'),
     browserSync = require('browser-sync');
 
-var path = {
+const path = {
     build: { //Тут мы укажем куда складывать готовые после сборки файлы
         html: 'build/',
         js: 'build/js/',
@@ -39,11 +39,18 @@ var path = {
     },
 };
 
+const onError = function(err) {
+    notify.onError({
+        title: 'Error in ' + err.plugin,
+    })(err);
+    this.emit('end');
+};
+
 
 
 function preproc(){
     return gulp.src(path.src.sass)
-        .pipe(plumber())
+        .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
         .pipe(sass())
         .pipe(sass().on('error', sass.logError))
@@ -67,7 +74,7 @@ function preproc(){
 // style
 function styles() {
     return gulp.src(path.src.css)
-        .pipe(plumber())
+        .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
         .pipe(autoprefixer({
             browsers: ['> 0.1%'],
@@ -89,7 +96,7 @@ function styles() {
 // js
 function scripts(){
     return gulp.src(path.src.js)
-        .pipe(plumber())
+        .pipe(plumber({ errorHandler: onError }))
         .pipe(includeFile())
         .pipe(sourcemaps.init())
         .pipe(minJS()) //Сожмем наш js
@@ -106,7 +113,7 @@ gulp.task('scripts', scripts);
 gulp.task('styles', styles);
 gulp.task('preproc', preproc);
 
-gulp.task('webserver', function (done) {
+gulp.task('webserver', function () {
     browserSync.init({
         server: {
             baseDir: "./build"
@@ -116,5 +123,4 @@ gulp.task('webserver', function (done) {
         port: 9000,
         logPrefix: "Frontend_Pack"
     });
-    done();
 });
