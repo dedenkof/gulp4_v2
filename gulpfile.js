@@ -13,7 +13,10 @@ const gulp = require('gulp'),
     includeFiles = require('gulp-rigger'),
     browserSync = require('browser-sync').create(),
     inject = require('gulp-inject'),
-    rimraf = require('rimraf');
+    rimraf = require('rimraf'),
+    googleWebFonts = require('gulp-google-webfonts');
+
+
 
 const path = {
     build: { //Тут мы укажем куда складывать готовые после сборки файлы
@@ -30,7 +33,8 @@ const path = {
         css: './src/css/**/*.css',
         sass: './src/sass/**/*.scss',
         img: './src/img/**/*.*', //Синтаксис img/**/*.* означает - взять все файлы всех расширений из папки и из вложенных каталогов
-        fonts: './src/fonts/**/*.*'
+        fonts: './src/fonts/**/*.*',
+        fontsGoogle: './src/fonts/'
     },
     watch: { //Тут мы укажем, за изменением каких файлов мы хотим наблюдать
         html: './src/**/*.html',
@@ -49,6 +53,20 @@ const onError = function(err) {
     })(err);
     this.emit('end');
 };
+
+const options = { };
+
+gulp.task('google-fonts', function () {
+    return gulp.src(path.src.fontsGoogle + 'fonts.list')
+        .pipe(googleWebFonts(options))
+        .pipe(gulp.dest(path.build.fonts));
+});
+
+gulp.task('fonts', function(done) {
+    gulp.src(path.src.fonts)
+        .pipe(gulp.dest(path.build.fonts));
+    done();
+});
 
 gulp.task('preproc', function (){
     return gulp.src(path.src.sass)
@@ -121,7 +139,12 @@ gulp.task('html', function (done) {
     done();
 });
 
-gulp.task('index', function (done) {
+/*gulp.task('fonts', function() {
+    gulp.src(path.src.fonts)
+        .pipe(gulp.dest(path.build.fonts))
+});*/
+
+gulp.task('index', function () {
     const target = gulp.src(path.src.html);
     // It's not necessary to read the files (will speed up things), we're only after their paths:
     const sources = gulp.src([path.src.js, path.src.sass, path.src.css], {read: false});
@@ -131,7 +154,6 @@ gulp.task('index', function (done) {
             target.pipe(inject(sources, {ignorePath: 'src', addRootSlash: false, relative: true }))
             .pipe(plumber({ errorHandler: onError }))
             .pipe(gulp.dest(path.build.html));
-    done();
 });
 
 gulp.task('webserver', function () {
@@ -153,15 +175,17 @@ gulp.task('clean', function (cb) {
 });
 
 
-gulp.task('watch', gulp.series(['html', 'index', 'scripts', 'preproc', 'styles']), function() {
+gulp.task('watch', gulp.series(['html', 'index', 'scripts', 'preproc', 'styles', 'fonts', 'google-fonts']), function() {
     gulp.watch(path.watch.html, gulp.series('html'));
     gulp.watch(path.watch.js, gulp.series('scripts'));
     gulp.watch(path.watch.sass, gulp.series('preproc'));
     gulp.watch(path.watch.css, gulp.series('styles'));
+    gulp.watch(path.watch.fonts, gulp.series('fonts'));
+    gulp.watch(path.watch.fonts, gulp.series('google-fonts'));
 
 });
 
-gulp.task('build',gulp.series(['clean', gulp.parallel('html', 'index', 'scripts', 'preproc', 'styles' )]));
+gulp.task('build',gulp.series(['clean', gulp.parallel('html', 'index', 'scripts', 'preproc', 'styles', 'fonts', 'google-fonts')]));
 
 gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'webserver')]));
 
