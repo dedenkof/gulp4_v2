@@ -11,7 +11,7 @@ const gulp = require('gulp'),
     minJS = require('gulp-uglify'),
     rename = require('gulp-rename'),
     includeFiles = require('gulp-rigger'),
-    browserSync = require('browser-sync'),
+    browserSync = require('browser-sync').create(),
     inject = require('gulp-inject'),
     rimraf = require('rimraf');
 
@@ -50,9 +50,7 @@ const onError = function(err) {
     this.emit('end');
 };
 
-
-
-function preproc(){
+gulp.task('preproc', function (){
     return gulp.src(path.src.sass)
         .pipe(plumber({ errorHandler: onError }))
         .pipe(includeFiles())
@@ -74,10 +72,9 @@ function preproc(){
             stream: true
         }));
 
-}
+});
 
-// style
-function styles() {
+gulp.task('styles', function () {
     return gulp.src(path.src.css)
         .pipe(plumber({ errorHandler: onError }))
         .pipe(includeFiles())
@@ -97,10 +94,9 @@ function styles() {
         .pipe(browserSync.reload({
             stream: true
         }));
-}
+});
 
-// js
-function scripts(){
+gulp.task('scripts', function (){
     return gulp.src(path.src.js)
         .pipe(plumber({ errorHandler: onError }))
         .pipe(includeFiles())
@@ -113,25 +109,19 @@ function scripts(){
             stream: true
         }));
 
-}
-
-gulp.task('scripts', scripts);
-gulp.task('styles', styles);
-gulp.task('preproc', preproc);
-
-gulp.task('webserver', function () {
-    browserSync.init({
-        server: {
-            baseDir: "./build"
-        },
-        tunnel: true,
-        host: 'localhost',
-        port: 9000,
-        logPrefix: "Frontend_Pack"
-    });
 });
 
-gulp.task('index', function () {
+// Сборка html
+gulp.task('html', function (done) {
+    gulp.src(path.src.html)
+        .pipe(gulp.dest(path.build.html))
+        .pipe(browserSync.reload({
+            stream: true
+        }));
+    done();
+});
+
+gulp.task('index', function (done) {
     const target = gulp.src(path.src.html);
     // It's not necessary to read the files (will speed up things), we're only after their paths:
     const sources = gulp.src([path.src.js, path.src.sass, path.src.css], {read: false});
@@ -141,9 +131,41 @@ gulp.task('index', function () {
             target.pipe(inject(sources, {ignorePath: 'src', addRootSlash: false, relative: true }))
             .pipe(plumber({ errorHandler: onError }))
             .pipe(gulp.dest(path.build.html));
+    done();
 });
 
-// Очистка
+gulp.task('webserver', function () {
+    browserSync.init({
+        server: {
+            baseDir: "./build"
+        },
+        tunnel: false,
+        host: 'localhost',
+        port: 9000,
+        //proxy: "yourlocal.dev",
+        logPrefix: "Frontend_Pack"
+    });
+
+});
+
 gulp.task('clean', function (cb) {
     rimraf(path.clean, cb);
 });
+
+
+gulp.task('watch', gulp.series(['html', 'index', 'scripts', 'preproc', 'styles']), function() {
+    gulp.watch(path.watch.html, gulp.series('html'));
+    gulp.watch(path.watch.js, gulp.series('scripts'));
+    gulp.watch(path.watch.sass, gulp.series('preproc'));
+    gulp.watch(path.watch.css, gulp.series('styles'));
+
+});
+
+gulp.task('build',gulp.series(['clean', gulp.parallel('html', 'index', 'scripts', 'preproc', 'styles' )]));
+
+gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'webserver')]));
+
+
+
+
+
