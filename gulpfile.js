@@ -14,7 +14,10 @@ const gulp = require('gulp'),
     browserSync = require('browser-sync').create(),
     inject = require('gulp-inject'),
     rimraf = require('rimraf'),
-    googleWebFonts = require('gulp-google-webfonts');
+    imagemin = require('gulp-imagemin'),
+    pngquant = require('imagemin-pngquant'),
+    googleWebFonts = require('gulp-google-webfonts'),
+    cache = require('gulp-cache');
 
 
 
@@ -129,7 +132,6 @@ gulp.task('scripts', function (){
 
 });
 
-// Сборка html
 gulp.task('html', function (done) {
     gulp.src(path.src.html)
         .pipe(gulp.dest(path.build.html))
@@ -139,10 +141,21 @@ gulp.task('html', function (done) {
     done();
 });
 
-/*gulp.task('fonts', function() {
-    gulp.src(path.src.fonts)
-        .pipe(gulp.dest(path.build.fonts))
-});*/
+gulp.task('image', function (done) {
+    gulp.src(path.src.img) //Выберем наши картинки
+        .pipe(cache(imagemin({
+            optimizationLevel: 3,
+            progressive: true,
+            svgoPlugins: [{removeViewBox: false}],
+            use: [pngquant()],
+            interlaced: true
+        })))
+        .pipe(gulp.dest(path.build.img)) //И бросим в build
+        .pipe(browserSync.reload({
+            stream: true
+        }));
+    done();
+});
 
 gulp.task('index', function () {
     const target = gulp.src(path.src.html);
@@ -151,7 +164,7 @@ gulp.task('index', function () {
 
 
     return target.pipe(includeFiles(sources)),
-            target.pipe(inject(sources, {ignorePath: 'src', addRootSlash: false, relative: true }))
+        target.pipe(inject(sources, {ignorePath: 'src', addRootSlash: false, relative: true }))
             .pipe(plumber({ errorHandler: onError }))
             .pipe(gulp.dest(path.build.html));
 });
@@ -175,21 +188,16 @@ gulp.task('clean', function (cb) {
 });
 
 
-gulp.task('watch', gulp.series(['html', 'index', 'scripts', 'preproc', 'styles', 'fonts', 'google-fonts']), function() {
+gulp.task('watch', gulp.series(['html', 'index', 'scripts', 'preproc', 'styles', 'fonts', 'google-fonts', 'image']), function() {
     gulp.watch(path.watch.html, gulp.series('html'));
     gulp.watch(path.watch.js, gulp.series('scripts'));
     gulp.watch(path.watch.sass, gulp.series('preproc'));
     gulp.watch(path.watch.css, gulp.series('styles'));
     gulp.watch(path.watch.fonts, gulp.series('fonts'));
     gulp.watch(path.watch.fonts, gulp.series('google-fonts'));
-
+    gulp.watch(path.watch.img, gulp.series('image'));
 });
 
-gulp.task('build',gulp.series(['clean', gulp.parallel('html', 'index', 'scripts', 'preproc', 'styles', 'fonts', 'google-fonts')]));
+gulp.task('build',gulp.series(['clean', gulp.parallel('html', 'index', 'scripts', 'preproc', 'styles', 'fonts', 'google-fonts', 'image')]));
 
 gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'webserver')]));
-
-
-
-
-
