@@ -8,10 +8,11 @@ const gulp = require('gulp'),
     plumber = require('gulp-plumber'),
     gcmq = require('gulp-group-css-media-queries'),
     cleanCSS = require('gulp-clean-css'),
+    postcss = require("gulp-postcss"),
     minJS = require('gulp-uglify'),
     rename = require('gulp-rename'),
     includeFiles = require('gulp-rigger'),
-    browserSync = require('browser-sync').create(),
+    browserSync = require('browser-sync'),
     inject = require('gulp-inject'),
     rimraf = require('rimraf'),
     imagemin = require('gulp-imagemin'),
@@ -24,13 +25,15 @@ const gulp = require('gulp'),
 
 const path = {
     build: { //Тут мы укажем куда складывать готовые после сборки файлы
-        html: 'build/',
+        build: 'build/',
+        html: 'build/*.html',
         js: 'build/js/',
         css: 'build/css/',
         img: 'build/img/',
         fonts: 'build/fonts/'
     },
     src: { //Пути откуда брать исходники
+        src: 'src/',
         mainHTML: './src/index.html', //Синтаксис src/*.html говорит gulp что мы хотим взять все файлы с расширением .html
         html: './src/*.html', //Синтаксис src/*.html говорит gulp что мы хотим взять все файлы с расширением .html
         js: './src/js/**/*.js',//В стилях и скриптах нам понадобятся только main файлы
@@ -48,6 +51,14 @@ const path = {
         img: './src/img/**/*.*',
         fonts: './src/fonts/**/*.*'
     },
+
+    tmp: {
+        css: '.tmp/css/',
+        js: '.tmp/js/',
+    },
+
+    nm: 'node_modules/',
+
     clean: './build'
 };
 
@@ -60,9 +71,6 @@ const onError = function(err) {
 
 const options = { };
 
-const injectOptions = {
-    addSuffix: 'min'
-};
 
 gulp.task('google-fonts', function () {
     return gulp.src(path.src.fontsGoogle + 'fonts.list')
@@ -75,37 +83,25 @@ gulp.task('fonts', function() {
         .pipe(gulp.dest(path.build.fonts));
 });
 
-gulp.task('preproc', function (){
+gulp.task('sass', function (){
     return gulp.src(path.src.sass)
         .pipe(plumber({ errorHandler: onError }))
-        .pipe(includeFiles())
         .pipe(sourcemaps.init())
-        .pipe(sass(
-            {
-                outputStyle: 'nested',
-                precision: 10,
-                includePaths: ['.'],
-            }
-        ))
-        .pipe(sass().on('error', sass.logError))
-        .pipe(autoprefixer({
-            browsers: ['> 0.1%'],
-            cascade: false
-        }))
-        .pipe(gcmq())
-        .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
-        .pipe(cleanCSS({
-            level: 2
-        }))
-        .pipe(sourcemaps.write('../maps', {addComment: false}))
-        .pipe(gulp.dest(path.build.css))
+        .pipe(sass({outputStyle: 'expanded'}))
+        .pipe(gulp.dest(path.tmp.css))
+        .pipe(rename({suffix: '.min'}))
+        .pipe(autoprefixer({browsers: ['> 0.1%'], cascade: false}))
+        .pipe(cleanCSS({level: 2}))
+        .pipe(sourcemaps.write('./'))
+        .pipe(gulp.dest(path.tmp.css))
         .pipe(browserSync.reload({
             stream: true
         }));
 
 });
 
-gulp.task('styles', function () {
+
+gulp.task('styles', gulp.series(['sass']), function () {
     return gulp.src(path.src.css)
         .pipe(plumber({ errorHandler: onError }))
         .pipe(includeFiles())
@@ -115,13 +111,12 @@ gulp.task('styles', function () {
             cascade: false
         }))
         .pipe(gcmq())
-        //.pipe(concat('general.css'))
         .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
         .pipe(cleanCSS({
             level: 2
         }))
         .pipe(sourcemaps.write('../maps', {addComment: false}))
-        .pipe(gulp.dest(path.build.css))
+        .pipe(gulp.dest(path.tmp.css))
         .pipe(browserSync.reload({
             stream: true
         }));
@@ -156,7 +151,6 @@ gulp.task('html', function () {
         }));
 });
 
-
 gulp.task('image', function () {
     return gulp.src(path.src.img) //Выберем наши картинки
         .pipe(cache(imagemin({
@@ -182,6 +176,30 @@ gulp.task('index', function () {
         target.pipe(inject(sources, {ignorePath: 'src', addRootSlash: false, relative: true }))
             .pipe(plumber({ errorHandler: onError }))
             .pipe(gulp.dest(path.build.html));
+});
+
+gulp.task('inject', function () {
+    const injectStyles = gulp.src([ // selects all css files from the .tmp dir
+            path.nm + 'bootstrap/dist/css/bootstrap.css',
+            path.nm + 'bootstrap/dist/css/bootstrap-grid.css',
+            path.tmp.css
+        ], { read: false }
+    );
+
+    const injectScripts = gulp.src([  // selects all js files from .tmp dir, но сейчас 24 марта мы еще не пишем в ES6
+        path.nm + 'jquery/dist/jquery.js', // Берем jQuery
+        path.nm + 'bootstrap/dist/js/bootstrap.js', // Берем bootstrap js
+        path.tmp.js,
+        '!' + path.src + '/!**!/!*.test.js'
+    ]);
+
+    return gulp.src(path.src + '/!*.html')
+        .pipe(inject(injectStyles, { name: 'head', relative: true }))
+        .pipe(inject(injectScripts, { relative: true }))
+        .pipe(gulp.dest(path.tmp))
+        .pipe(browserSync.reload({
+            stream: true
+        }));
 });
 
 gulp.task('webserver', function () {
@@ -215,5 +233,5 @@ gulp.task('watch', gulp.series(['html', 'index', 'scripts', 'preproc', 'styles',
 
 gulp.task('build',gulp.series(['clean', gulp.parallel('html', 'index', 'scripts', 'preproc', 'styles', 'fonts', 'google-fonts', 'image')]));
 
-gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'webserver')]));
+gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'webserver')]));*/
 
