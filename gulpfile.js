@@ -8,25 +8,25 @@ const gulp = require('gulp'),
     plumber = require('gulp-plumber'),
     gcmq = require('gulp-group-css-media-queries'),
     cleanCSS = require('gulp-clean-css'),
-    postcss = require("gulp-postcss"),
     minJS = require('gulp-uglify'),
     rename = require('gulp-rename'),
     includeFiles = require('gulp-rigger'),
-    browserSync = require('browser-sync'),
+    browserSync = require('browser-sync').create(),
     inject = require('gulp-inject'),
     rimraf = require('rimraf'),
     imagemin = require('gulp-imagemin'),
     pngquant = require('imagemin-pngquant'),
     googleWebFonts = require('gulp-google-webfonts'),
+    replace = require('gulp-replace'),
     htmlmin = require('gulp-htmlmin'),
+    pug = require('gulp-pug'),
     cache = require('gulp-cache');
 
 
 
 const path = {
     build: { //Тут мы укажем куда складывать готовые после сборки файлы
-        build: 'build/',
-        html: 'build/*.html',
+        html: 'build/',
         js: 'build/js/',
         css: 'build/css/',
         img: 'build/img/',
@@ -34,22 +34,23 @@ const path = {
     },
     src: { //Пути откуда брать исходники
         src: 'src/',
-        mainHTML: './src/index.html', //Синтаксис src/*.html говорит gulp что мы хотим взять все файлы с расширением .html
-        html: './src/*.html', //Синтаксис src/*.html говорит gulp что мы хотим взять все файлы с расширением .html
-        js: './src/js/**/*.js',//В стилях и скриптах нам понадобятся только main файлы
-        css: './src/css/**/*.css',
-        sass: './src/sass/**/*.scss',
-        img: './src/img/**/*.*', //Синтаксис img/**/*.* означает - взять все файлы всех расширений из папки и из вложенных каталогов
-        fonts: './src/fonts/**/*.*',
-        fontsGoogle: './src/fonts/'
+        mainHTML: 'src/index.html', //Синтаксис src/*.html говорит gulp что мы хотим взять все файлы с расширением .html
+        html: 'src/*.html', //Синтаксис src/*.html говорит gulp что мы хотим взять все файлы с расширением .html
+        js: 'src/js/*.js',//В стилях и скриптах нам понадобятся только main файлы
+        jsLib: 'src/js/libs/**/*.js',//В стилях и скриптах нам понадобятся только main файлы
+        css: 'src/css/**/*.css',
+        sass: 'src/sass/**/*.scss',
+        img: 'src/img/**/*.*', //Синтаксис img/**/*.* означает - взять все файлы всех расширений из папки и из вложенных каталогов
+        fonts: 'src/fonts/**/*.*',
+        fontsGoogle: 'src/fonts/'
     },
     watch: { //Тут мы укажем, за изменением каких файлов мы хотим наблюдать
-        html: './src/**/*.html',
-        js: './src/js/**/*.js',
-        css: './src/css/**/*.scss',
-        sass: './src/sass/**/*.scss',
-        img: './src/img/**/*.*',
-        fonts: './src/fonts/**/*.*'
+        html: 'src/**/*.html',
+        js: 'src/js/**/*.js',
+        css: 'src/css/**/*.scss',
+        sass: 'src/sass/**/*.scss',
+        img: 'src/img/**/*.*',
+        fonts: 'src/fonts/**/*.*'
     },
 
     tmp: {
@@ -72,54 +73,32 @@ const onError = function(err) {
 const options = { };
 
 
-gulp.task('google-fonts', function () {
-    return gulp.src(path.src.fontsGoogle + 'fonts.list')
-        .pipe(googleWebFonts(options))
-        .pipe(gulp.dest(path.build.fonts));
-});
-
-gulp.task('fonts', function() {
-    return gulp.src(path.src.fonts)
-        .pipe(gulp.dest(path.build.fonts));
-});
-
-gulp.task('sass', function (){
-    return gulp.src(path.src.sass)
-        .pipe(plumber({ errorHandler: onError }))
-        .pipe(sourcemaps.init())
-        .pipe(sass({outputStyle: 'expanded'}))
-        .pipe(gulp.dest(path.tmp.css))
-        .pipe(rename({suffix: '.min'}))
-        .pipe(autoprefixer({browsers: ['> 0.1%'], cascade: false}))
-        .pipe(cleanCSS({level: 2}))
-        .pipe(sourcemaps.write('./'))
-        .pipe(gulp.dest(path.tmp.css))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
-
-});
-
-
-gulp.task('styles', gulp.series(['sass']), function () {
-    return gulp.src(path.src.css)
+gulp.task('html', function () {
+    return gulp.src(path.src.html)
         .pipe(plumber({ errorHandler: onError }))
         .pipe(includeFiles())
+        /*.pipe(htmlmin({
+            collapseWhitespace: true,
+            removeComments: false
+        }))*/
+        .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, '')) // убираем комментарии <!--DEV ... -->
+        .pipe(gulp.dest(path.build.html))
+        .on('end', browserSync.reload);
+});
+
+gulp.task('scriptsLib', function (){
+    return gulp.src(path.src.jsLib)
+        .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
-        .pipe(autoprefixer({
-            browsers: ['> 0.1%'],
-            cascade: false
-        }))
-        .pipe(gcmq())
+        .pipe(minJS()) //Сожмем наш js
+        .pipe(concat('libs.js'))
         .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
-        .pipe(cleanCSS({
-            level: 2
-        }))
-        .pipe(sourcemaps.write('../maps', {addComment: false}))
-        .pipe(gulp.dest(path.tmp.css))
+        .pipe(sourcemaps.write('.', {addComment: false}))
+        .pipe(gulp.dest(path.tmp.js))
         .pipe(browserSync.reload({
             stream: true
         }));
+
 });
 
 gulp.task('scripts', function (){
@@ -128,92 +107,30 @@ gulp.task('scripts', function (){
         .pipe(includeFiles())
         .pipe(sourcemaps.init())
         .pipe(minJS()) //Сожмем наш js
+        .pipe(concat('general.js'))
         .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
-        .pipe(sourcemaps.write('../maps', {addComment: false}))
-        .pipe(gulp.dest(path.build.js))
+        .pipe(sourcemaps.write('.', {addComment: false}))
+        .pipe(gulp.dest(path.tmp.js))
         .pipe(browserSync.reload({
             stream: true
         }));
 
 });
 
-gulp.task('html', function () {
-    return gulp.src(path.src.html)
-        .pipe(plumber({ errorHandler: onError }))
-        //.pipe(includeFiles())
-        .pipe(htmlmin({
-            collapseWhitespace: true,
-            removeComments: false
-        }))
-        .pipe(gulp.dest(path.build.html))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
-});
-
-gulp.task('image', function () {
-    return gulp.src(path.src.img) //Выберем наши картинки
-        .pipe(cache(imagemin({
-            optimizationLevel: 3,
-            progressive: true,
-            svgoPlugins: [{removeViewBox: false}],
-            use: [pngquant()],
-            interlaced: true
-        })))
-        .pipe(gulp.dest(path.build.img)) //И бросим в build
-        .pipe(browserSync.reload({
-            stream: true
-        }));
-});
-
-gulp.task('index', function () {
-    const target = gulp.src(path.src.html);
-    // It's not necessary to read the files (will speed up things), we're only after their paths:
-    const sources = gulp.src([path.src.js, path.src.sass, path.src.css], {read: false});
 
 
-    return target.pipe(includeFiles(sources)),
-        target.pipe(inject(sources, {ignorePath: 'src', addRootSlash: false, relative: true }))
-            .pipe(plumber({ errorHandler: onError }))
-            .pipe(gulp.dest(path.build.html));
-});
-
-gulp.task('inject', function () {
-    const injectStyles = gulp.src([ // selects all css files from the .tmp dir
-            path.nm + 'bootstrap/dist/css/bootstrap.css',
-            path.nm + 'bootstrap/dist/css/bootstrap-grid.css',
-            path.tmp.css
-        ], { read: false }
-    );
-
-    const injectScripts = gulp.src([  // selects all js files from .tmp dir, но сейчас 24 марта мы еще не пишем в ES6
-        path.nm + 'jquery/dist/jquery.js', // Берем jQuery
-        path.nm + 'bootstrap/dist/js/bootstrap.js', // Берем bootstrap js
-        path.tmp.js,
-        '!' + path.src + '/!**!/!*.test.js'
-    ]);
-
-    return gulp.src(path.src + '/!*.html')
-        .pipe(inject(injectStyles, { name: 'head', relative: true }))
-        .pipe(inject(injectScripts, { relative: true }))
-        .pipe(gulp.dest(path.tmp))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
-});
-
-gulp.task('webserver', function () {
+gulp.task('serve', function () {
     browserSync.init({
         server: {
             baseDir: "./build"
         },
         tunnel: false,
+        // startPath: 'index.html',
         host: 'localhost',
         port: 9000,
         //proxy: "yourlocal.dev",
         logPrefix: "Frontend_History_Action"
     });
-
 });
 
 gulp.task('clean', function (cb) {
@@ -221,7 +138,7 @@ gulp.task('clean', function (cb) {
 });
 
 
-gulp.task('watch', gulp.series(['html', 'index', 'scripts', 'preproc', 'styles', 'fonts', 'google-fonts', 'image']), function() {
+/*gulp.task('watch', gulp.series(['html', 'index', 'scripts', 'preproc', 'styles', 'fonts', 'google-fonts', 'image']), function() {
     gulp.watch(path.watch.html, gulp.series('html'));
     gulp.watch(path.watch.js, gulp.series('scripts'));
     gulp.watch(path.watch.sass, gulp.series('preproc'));
@@ -229,9 +146,22 @@ gulp.task('watch', gulp.series(['html', 'index', 'scripts', 'preproc', 'styles',
     gulp.watch(path.watch.fonts, gulp.series('fonts'));
     gulp.watch(path.watch.fonts, gulp.series('google-fonts'));
     gulp.watch(path.watch.img, gulp.series('image'));
+});*/
+
+gulp.task('watch', function() {
+    gulp.watch(path.watch.html, gulp.series('html'));
+    gulp.watch(path.watch.js, gulp.series('scripts'));
+    gulp.watch(path.watch.js, gulp.series('scriptsLib'));
 });
 
-gulp.task('build',gulp.series(['clean', gulp.parallel('html', 'index', 'scripts', 'preproc', 'styles', 'fonts', 'google-fonts', 'image')]));
+/*gulp.task('default', gulp.series(
+    gulp.parallel('html'),
+    gulp.parallel('watch', 'serve')
+));*/
 
-gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'webserver')]));*/
+gulp.task('default', gulp.series(['html','scripts', 'scriptsLib', gulp.parallel('watch', 'serve')]));
+
+//gulp.task('build',gulp.series(['clean', gulp.parallel('html', 'index', 'scripts', 'preproc', 'styles', 'fonts', 'google-fonts', 'image')]));
+
+//gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'webserver')]));
 
