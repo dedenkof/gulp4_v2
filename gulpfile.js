@@ -42,7 +42,9 @@ const path = {
         fonts: 'build/fonts/',
         sprites: 'build/img/sprites/',
         spritesCss: 'build/css/partial/',
-        svg: 'build/img/svg/'
+        svg: 'build/img/svg/',
+        injectCSS: 'build/css/**/*.css',
+        injectJS: 'build/js/**/*.js'
     },
     src: { //Пути откуда брать исходники
         src: 'src/',
@@ -54,13 +56,21 @@ const path = {
         css: 'src/css/**/*.css',
         cssLib: 'src/css/libs/**/*.css',
         sass: 'src/sass/**/*.scss',
-        img: 'src/img/**/*.{png,jpg,gif}', //Синтаксис img/**/*.* означает - взять все файлы всех расширений из папки и из вложенных каталогов
+        img: 'src/img/**/*.{png,jpg,gif,svg}', //Синтаксис img/**/*.* означает - взять все файлы всех расширений из папки и из вложенных каталогов
         fonts: 'src/fonts/**/*.*',
         fontsGoogle: 'src/fonts/',
         htaccess: 'src/.htaccess',
         sprites: 'src/img/sprites/*.png',
-        svgSprites: 'src/img/sprites/',
+        svgSprites: 'src/img/sprites/svg-sprite/',
         svg: 'src/img/svg/**/*.svg'
+    },
+    libsCSS: {
+        bootstrapCSS: 'node_modules/bootstrap/dist/css/bootstrap.css',
+        bootstrapGrid: 'node_modules/bootstrap/dist/css/bootstrap-grid.css',
+    },
+    libsJS: {
+        jquery: 'node_modules/jquery/dist/jquery.js', // Берем jQuery
+        bootstrapJS: 'node_modules/bootstrap/dist/js/bootstrap.js'
     },
     watch: { //Тут мы укажем, за изменением каких файлов мы хотим наблюдать
         html: 'src/**/*.html',
@@ -74,8 +84,6 @@ const path = {
         sprites: 'src/img/sprites/*.png',
         svg: 'src/img/svg/**/*.svg'
     },
-
-    nm: 'node_modules/',
 
     cleanBuild: './build'
 };
@@ -160,7 +168,7 @@ gulp.task('sass', function (){
         .pipe(gcmq())
         .pipe(concat('custom.css'))
         .pipe(rename({suffix: '.min'}))
-        // .pipe(cleanCSS({level: 2}))
+        .pipe(cleanCSS({level: 2}))
         .pipe(sourcemaps.write('.'))
         .pipe(gulp.dest(path.build.css))
         .pipe(browserSync.reload({
@@ -188,16 +196,16 @@ gulp.task('stylus', function (){
 });
 
 gulp.task('cssLibs', function () {
-    return gulp.src(path.src.cssLib)
+    return gulp.src([path.src.cssLib, path.libsCSS.bootstrapCSS, path.libsCSS.bootstrapGrid])
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
         .pipe(autoprefixer({ browsers: autoprefixerList, cascade: false}))
         .pipe(gcmq())
-        .pipe(concat('libs.css'))
-        .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
-        .pipe(cleanCSS({
+        //.pipe(concat('libs.css'))
+        //.pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
+        /*.pipe(cleanCSS({
             level: 2
-        }))
+        }))*/
         .pipe(sourcemaps.write('.', {addComment: false}))
         .pipe(gulp.dest(path.build.css))
         .pipe(browserSync.reload({
@@ -206,13 +214,13 @@ gulp.task('cssLibs', function () {
 });
 
 gulp.task('scriptsLibs', function (){
-    return gulp.src(path.src.jsLib)
-        .pipe(includeFiles())
+    return gulp.src([path.libsJS.jquery, path.libsJS.bootstrapJS, path.src.jsLib])
+        //.pipe(includeFiles())
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
-        .pipe(minJS()) //Сожмем наш js
-        .pipe(concat('libs.js'))
-        .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
+        //.pipe(minJS()) //Сожмем наш js
+        //.pipe(concat('libs.js'))
+        //.pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
         .pipe(sourcemaps.write('.', {addComment: false}))
         .pipe(gulp.dest(path.build.js))
         .pipe(browserSync.reload({
@@ -226,7 +234,7 @@ gulp.task('scripts', function (){
         .pipe(includeFiles())
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
-        //.pipe(minJS()) //Сожмем наш js
+        .pipe(minJS()) //Сожмем наш js
         .pipe(concat('general.js'))
         .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
         .pipe(sourcemaps.write('.', {addComment: false}))
@@ -239,30 +247,25 @@ gulp.task('scripts', function (){
 
 gulp.task('inject', function () {
 
-    const injectStyles = gulp.src([ // selects all css files from the .tmp dir
-            path.nm + 'bootstrap/dist/css/bootstrap.css',
-            path.nm + 'bootstrap/dist/css/bootstrap-grid.css',
-            path.build.css
-        ], { read: false }
-    );
+    const injectStyles = gulp.src(path.build.injectCSS, { read: false });
 
-    const injectScripts = gulp.src([  // selects all js files from .tmp dir, но сейчас 24 марта мы еще не пишем в ES6
-        path.nm + 'jquery/dist/jquery.js', // Берем jQuery
-        path.nm + 'bootstrap/dist/js/bootstrap.js', // Берем bootstrap js
-        path.build.js
-    ]);
+    const injectScripts = gulp.src(path.build.injectJS, { read: false });
 
     return gulp.src(path.src.html)
-        .pipe(inject(injectStyles, { name: 'head', relative: true }))
-        .pipe(inject(injectScripts, { relative: true }))
+        .pipe(flatten({ subPath: [1, 1]}))
+        .pipe(includeFiles())
+
+        .pipe(inject(injectStyles, { ignorePath: 'src', addRootSlash: false, relative: true }))
+        .pipe(inject(injectScripts, { ignorePath: 'src', addRootSlash: false, relative: true }))
+
         .pipe(gulp.dest(path.build.html))
         .pipe(browserSync.reload({
             stream: true
         }));
 });
 
-gulp.task('image', function () {
-    return gulp.src(path.src.img) //Выберем наши картинки
+gulp.task('images', function () {
+    return gulp.src([path.src.img, '!' + path.src.src + 'img/svg/**/*.*']) //Выберем наши картинки кроме svg иконок
         .pipe(cache(imagemin({
             optimizationLevel: 3,
             progressive: true,
@@ -276,7 +279,8 @@ gulp.task('image', function () {
         }));
 });
 
-gulp.task('sprites', function () {
+
+/*gulp.task('sprites', function () {
     const spriteData =
         gulp.src(path.src.sprites) //выберем откуда брать изображения для объединения в спрайт
             .pipe(spritesmith({
@@ -291,10 +295,30 @@ gulp.task('sprites', function () {
             }));
     spriteData.img.pipe(gulp.dest(path.build.sprites)); // путь, куда сохраняем картинку
     spriteData.css.pipe(gulp.dest(path.build.spritesCss)); // путь, куда сохраняем стили
+});*/
+
+gulp.task('spritePNG', function() {
+    const spriteData =
+        gulp.src('src/img/sprite/*.*', '!' + path.src.src + 'img/sprites/svg-sprite/**/*.*') // путь, откуда берем картинки для спрайта
+            .pipe(spritesmith({
+                imgName: 'sprite.png',
+                cssName: '_sprite.scss',
+                cssFormat: 'scss',
+                algorithm: 'binary-tree',
+                padding: 1,
+                cssTemplate: 'scss.template.mustache',
+                cssVarMap: function(sprite) {
+                    sprite.name = 's-' + sprite.name
+                }//
+            }));
+
+    spriteData.img.pipe(gulp.dest('src/img/sprites')); // путь, куда сохраняем картинку
+    spriteData.css.pipe(gulp.dest('src/sass/')); // путь, куда сохраняем стили
 });
 
 
- 	fontName = 'iconfont';
+
+ 	/*let fontName = 'iconfont';
     gulp.task('iconfont', function () {
  	gulp.src([path.src.svg])
  		.pipe(iconfontCss({
@@ -310,8 +334,14 @@ gulp.task('sprites', function () {
  			formats: ['svg','eot','woff','ttf']
  		}))
  		.pipe(gulp.dest('assets/fonts/icons'));
- });
+ });*/
 
+//copy sprite.svg
+gulp.task('copySpriteSVG', function () {
+    return gulp.src('src/img/sprites/*.svg')
+        .pipe(plumber())
+        .pipe(gulp.dest('build/img/sprites/'))
+});
 
 gulp.task('svgSpriteBuild', function () {
         return gulp.src(path.src.svg)
@@ -334,7 +364,7 @@ gulp.task('svgSpriteBuild', function () {
             .pipe(svgSprite({
                 mode: {
                     symbol: {
-                        sprite: '../sprite.svg',
+                        sprite: '../svg-sprite/sprite.svg',
                         render: {
                             scss: {
                                 dest: '../../../sass/icons/_sprite.scss',
@@ -344,34 +374,47 @@ gulp.task('svgSpriteBuild', function () {
                         example: true
                     }
                 }
+
+                /*dest : '.',
+                mode : {
+                    css : {
+                        dest : '.',
+                        sprite : 'img/sprites/sprite.svg',
+                        render : {
+                            css : {dest : 'css/sprite.css'},
+                            scss : {
+                                dest: '../../../sass/icons/_sprite.scss'
+                            }
+                        },
+                    }
+                }*/
             }))
             .pipe(gulp.dest(path.src.svgSprites));
 });
 
 //copy sprite.svg
-gulp.task('copySprite', function () {
-    return gulp.src(path.src.src + 'img/sprites/sprite.svg')
-        .pipe(plumber())
-        .pipe(gulp.dest(path.build.svg))
+gulp.task('copySpriteSVG', function () {
+    return gulp.src(path.src.svgSprites)
+        .pipe(gulp.dest(path.build.sprites))
 });
 
 gulp.task('fonts', function() {
-    gulp.src(path.src.fonts)
+    return gulp.src(path.src.fonts)
         .pipe(gulp.dest(path.build.fonts));
 });
 
 gulp.task('favicon', function() {
-    gulp.src(path.src.src + 'favicon.ico')
+    return gulp.src(path.src.src + 'favicon.ico')
         .pipe(gulp.dest(path.build.html));
 });
 
 gulp.task('htaccess', function() {
-    gulp.src(path.src.htaccess)
+    return gulp.src(path.src.htaccess)
         .pipe(gulp.dest(path.build.htaccess))
 });
 
 gulp.task('serve', function () {
-    browserSync(config);
+    return browserSync(config);
 });
 
 
@@ -388,11 +431,11 @@ gulp.task('clean', function (cb) {
     gulp.watch(path.watch.css, gulp.series('cssLibs'));
     gulp.watch(path.watch.js, gulp.series('scripts'));
     gulp.watch(path.watch.js, gulp.series('scriptsLibs'));
-    gulp.watch(path.watch.js, gulp.series('image'));
+    gulp.watch(path.watch.js, gulp.series('images'));
     gulp.watch(path.watch.fonts, gulp.series('fonts'));
 });
 
-gulp.task('assets', gulp.series(['html', 'sass', 'cssLibs', 'scripts', 'scriptsLibs', 'image', 'fonts']));
+gulp.task('assets', gulp.series(['html', 'sass', 'cssLibs', 'scripts', 'scriptsLibs', 'images', 'fonts']));
 
 
 gulp.task('build', gulp.series('clean', 'assets', gulp.parallel('inject')));

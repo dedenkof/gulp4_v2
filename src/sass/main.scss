@@ -14,6 +14,10 @@
 @import './icons/icons';
 @import './icons/sprite';
 
+// *** Sprites ***
+@import './templates/sprite_template_mustache';
+@import './templates/mixins';
+
 // *** Partials ***
 @import './partials/header';
 @import './partials/footer';
