@@ -5,7 +5,12 @@ const gulp = require('gulp'),
     concat = require('gulp-concat'),
     useref = require('gulp-useref'),
     gulpif = require('gulp-if'),
+    svgmin = require('gulp-svgmin'),
+    iconfont = require('gulp-iconfont'),
+    iconfontCss = require('gulp-iconfont-css'),
     sass = require('gulp-sass'),
+    cheerio = require('gulp-cheerio'),
+    svgSprite = require('gulp-svg-sprite'),
     sourcemaps = require('gulp-sourcemaps'),
     plumber = require('gulp-plumber'),
     notify = require('gulp-notify'),
@@ -27,8 +32,6 @@ const gulp = require('gulp'),
     sftp = require('gulp-sftp'),
     cache = require('gulp-cache');
 
-
-
 const path = {
     build: { //Тут мы укажем куда складывать готовые после сборки файлы
         html: 'build/',
@@ -38,7 +41,8 @@ const path = {
         img: 'build/img/',
         fonts: 'build/fonts/',
         sprites: 'build/img/sprites/',
-        spritesCss: 'build/css/partial/'
+        spritesCss: 'build/css/partial/',
+        svg: 'build/img/svg/'
     },
     src: { //Пути откуда брать исходники
         src: 'src/',
@@ -50,11 +54,13 @@ const path = {
         css: 'src/css/**/*.css',
         cssLib: 'src/css/libs/**/*.css',
         sass: 'src/sass/**/*.scss',
-        img: 'src/img/**/*.*', //Синтаксис img/**/*.* означает - взять все файлы всех расширений из папки и из вложенных каталогов
+        img: 'src/img/**/*.{png,jpg,gif}', //Синтаксис img/**/*.* означает - взять все файлы всех расширений из папки и из вложенных каталогов
         fonts: 'src/fonts/**/*.*',
         fontsGoogle: 'src/fonts/',
         htaccess: 'src/.htaccess',
-        sprites: 'src/img/sprites/*.png'
+        sprites: 'src/img/sprites/*.png',
+        svgSprites: 'src/img/sprites/',
+        svg: 'src/img/svg/**/*.svg'
     },
     watch: { //Тут мы укажем, за изменением каких файлов мы хотим наблюдать
         html: 'src/**/*.html',
@@ -65,7 +71,8 @@ const path = {
         img: 'src/img/**/*.*',
         fonts: 'src/fonts/**/*.*',
         htaccess: 'src/.htaccess',
-        sprites: 'src/img/sprites/*.png'
+        sprites: 'src/img/sprites/*.png',
+        svg: 'src/img/svg/**/*.svg'
     },
 
     nm: 'node_modules/',
@@ -122,9 +129,23 @@ gulp.task('html', function () {
         .pipe(plumber({ errorHandler: onError }))
         .pipe(includeFiles())
         /*.pipe(htmlmin({
-            collapseWhitespace: true,
-            removeComments: false
-        }))*/
+         collapseWhitespace: true,
+         removeComments: false
+         }))*/
+        .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, '')) // убираем комментарии <!--DEV ... -->
+        .pipe(gulp.dest(path.build.html))
+        .on('end', browserSync.reload);
+});
+
+gulp.task('pug', function () {
+    return gulp.src('src/pug/pages/*.pug')
+        .pipe(plumber({ errorHandler: onError }))
+        .pipe(includeFiles())
+        .pipe(pug({pretty: true}))
+        /*.pipe(htmlmin({
+         collapseWhitespace: true,
+         removeComments: false
+         }))*/
         .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, '')) // убираем комментарии <!--DEV ... -->
         .pipe(gulp.dest(path.build.html))
         .on('end', browserSync.reload);
@@ -138,6 +159,24 @@ gulp.task('sass', function (){
         .pipe(autoprefixer({ browsers: autoprefixerList, cascade: false}))
         .pipe(gcmq())
         .pipe(concat('custom.css'))
+        .pipe(rename({suffix: '.min'}))
+        // .pipe(cleanCSS({level: 2}))
+        .pipe(sourcemaps.write('.'))
+        .pipe(gulp.dest(path.build.css))
+        .pipe(browserSync.reload({
+            stream: true
+        }));
+
+});
+
+gulp.task('stylus', function (){
+    return gulp.src('src/stylus/main.styl')
+        .pipe(plumber({ errorHandler: onError }))
+        .pipe(sourcemaps.init())
+        .pipe(stylus({include_css: true}))
+        .pipe(autoprefixer({ browsers: autoprefixerList, cascade: false}))
+        .pipe(gcmq())
+        .pipe(concat('custom2.css'))
         .pipe(rename({suffix: '.min'}))
         // .pipe(cleanCSS({level: 2}))
         .pipe(sourcemaps.write('.'))
@@ -254,6 +293,68 @@ gulp.task('sprites', function () {
     spriteData.css.pipe(gulp.dest(path.build.spritesCss)); // путь, куда сохраняем стили
 });
 
+
+ 	fontName = 'iconfont';
+    gulp.task('iconfont', function () {
+ 	gulp.src([path.src.svg])
+ 		.pipe(iconfontCss({
+ 			path: 'assets/sass/templates/_icons_template.scss',
+ 			fontName: fontName,
+ 			targetPath: '../../sass/_icons.scss',
+ 			fontPath: '../fonts/icons/',
+ 			svg: true
+ 		}))
+ 		.pipe(iconfont({
+ 			fontName: fontName,
+ 			svg: true,
+ 			formats: ['svg','eot','woff','ttf']
+ 		}))
+ 		.pipe(gulp.dest('assets/fonts/icons'));
+ });
+
+
+gulp.task('svgSpriteBuild', function () {
+        return gulp.src(path.src.svg)
+            .pipe(svgmin({
+                js2svg: {
+                    pretty: true
+                }
+            }))
+            .pipe(cheerio({
+                run: function ($) {
+                    $('fill').removeAttr();
+                    $('stroke').removeAttr();
+                    $('style').removeAttr();
+                    $('class').removeAttr();
+
+                },
+                parserOptions: {xmlMode: true}
+            }))
+            .pipe(replace('&gt;', '>'))
+            .pipe(svgSprite({
+                mode: {
+                    symbol: {
+                        sprite: '../sprite.svg',
+                        render: {
+                            scss: {
+                                dest: '../../../sass/icons/_sprite.scss',
+                                template: path.src.src + 'sass/templates/_sprite_template.scss'
+                            }
+                        },
+                        example: true
+                    }
+                }
+            }))
+            .pipe(gulp.dest(path.src.svgSprites));
+});
+
+//copy sprite.svg
+gulp.task('copySprite', function () {
+    return gulp.src(path.src.src + 'img/sprites/sprite.svg')
+        .pipe(plumber())
+        .pipe(gulp.dest(path.build.svg))
+});
+
 gulp.task('fonts', function() {
     gulp.src(path.src.fonts)
         .pipe(gulp.dest(path.build.fonts));
@@ -281,7 +382,7 @@ gulp.task('clean', function (cb) {
 
 
 
-gulp.task('watch', function() {
+/*gulp.task('watch', function() {
     gulp.watch(path.watch.html, gulp.series('html'));
     gulp.watch(path.watch.sass, gulp.series('sass'));
     gulp.watch(path.watch.css, gulp.series('cssLibs'));
@@ -297,7 +398,7 @@ gulp.task('assets', gulp.series(['html', 'sass', 'cssLibs', 'scripts', 'scriptsL
 gulp.task('build', gulp.series('clean', 'assets', gulp.parallel('inject')));
 
 
-gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'serve')]));
+gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'serve')]));*/
 
 
 

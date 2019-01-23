@@ -1,3 +1,4 @@
+$(document).ready(function () {
 $('.ny-wrap').mousemove(function(e){
     var width = $(this).width() / 2;
     var height = $(this).height() / 2;
@@ -57,4 +58,8 @@ $('.ny-wrap').mousemove(function(e){
     $('.tape4').css({'marginLeft': tape4MovedX , 'transition-property': 'all', 'transition-duration': '.01s', 'transition-timing-function': 'ease-in'});
     $('.tape4').css({'marginTop': tape4MovedY , 'transition-property': 'all', 'transition-duration': '.01s', 'transition-timing-function': 'ease-in'});
 
+});
+
+
+    svg4everybody({});
 });
