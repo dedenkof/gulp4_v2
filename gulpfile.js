@@ -24,13 +24,22 @@ const gulp = require('gulp'),
     rimraf = require('rimraf'),
     imagemin = require('gulp-imagemin'),
     pngquant = require('imagemin-pngquant'),
-    spritesmith = require('spritesmith'),
+    spritesmith = require('gulp.spritesmith'),
     googleWebFonts = require('gulp-google-webfonts'),
     replace = require('gulp-replace'),
     htmlmin = require('gulp-htmlmin'),
     pug = require('gulp-pug'),
     sftp = require('gulp-sftp'),
-    cache = require('gulp-cache');
+    cache = require('gulp-cache'),
+    flatten = require('gulp-flatten'),
+    gifsicle = require('imagemin-gifsicle'),
+    jpegtran = require('imagemin-jpegtran'),
+    optipng = require('imagemin-optipng'),
+    html5Lint = require('gulp-html5-lint'),
+    stylelint = require('stylelint'),
+    realFavicon = require ('gulp-real-favicon'),
+    fs = require('fs'),
+    npmDist = require('gulp-npm-dist');
 
 const path = {
     build: { //Тут мы укажем куда складывать готовые после сборки файлы
@@ -62,7 +71,7 @@ const path = {
         htaccess: 'src/.htaccess',
         sprites: 'src/img/sprites/*.png',
         svgSprites: 'src/img/sprites/svg-sprite/',
-        svg: 'src/img/svg/**/*.svg'
+        svg: 'src/img/uploads/svg-sprite-pack/**/*.svg'
     },
     libsCSS: {
         bootstrapCSS: 'node_modules/bootstrap/dist/css/bootstrap.css',
@@ -96,6 +105,8 @@ const onError = function(err) {
 };
 
 const options = { };
+
+const FAVICON_DATA_FILE = 'faviconData.json';
 
 const autoprefixerList = [
     'Chrome >= 45',
@@ -131,6 +142,31 @@ gulp.task('sftp', function (){
 
 });
 
+gulp.task('copyLibsCSS', function () {
+    return gulp.src(npmDist({
+        excludes: [
+            '/**/*.txt',
+            '/**/*.js',
+            '/**/bootstrap-reboot.min.css'
+        ]
+    }), { base: './node_modules' })
+        .pipe(flatten({ includeParents: 1}))
+        .pipe(gulp.dest(path.build.css));
+});
+
+gulp.task('copyLibsJS', function () {
+    return gulp.src(npmDist({
+        excludes: [
+            '/**/*.txt',
+            '/**/*.css',
+            '/**/core.js',
+            '/**/jquery.slim.min.js',
+            '/**/bootstrap.bundle.min.js'
+        ]
+    }), { base: './node_modules' })
+        .pipe(flatten({ includeParents: 1}))
+        .pipe(gulp.dest(path.build.js));
+});
 
 gulp.task('html', function () {
     return gulp.src(path.src.html)
@@ -264,56 +300,25 @@ gulp.task('inject', function () {
         }));
 });
 
-gulp.task('images', function () {
-    return gulp.src([path.src.img, '!' + path.src.src + 'img/svg/**/*.*']) //Выберем наши картинки кроме svg иконок
-        .pipe(cache(imagemin({
-            optimizationLevel: 3,
-            progressive: true,
-            svgoPlugins: [{removeViewBox: false}],
-            use: [pngquant()],
-            interlaced: true
-        })))
-        .pipe(gulp.dest(path.build.img)) //И бросим в build
-        .pipe(browserSync.reload({
-            stream: true
-        }));
-});
 
-
-/*gulp.task('sprites', function () {
+gulp.task('spritePNG', function(done) {
     const spriteData =
-        gulp.src(path.src.sprites) //выберем откуда брать изображения для объединения в спрайт
-            .pipe(spritesmith({
-                imgName: 'sprite.png', //имя спрайтового изображения
-                cssName: 'sprite.sass', //имя стиля где храним позиции изображений в спрайте
-                imgPath: 'images/sprite.png', //путь где лежит спрайт
-                cssFormat: 'sass', //формат в котором обрабатываем позиции
-                cssTemplate: 'scss.template.mustache', //файл маски
-                cssVarMap: function(sprite) {
-                    sprite.name = 's-' + sprite.name //имя каждого спрайта будет состоять из имени файла и конструкции 's-' в начале имени
-                }
-            }));
-    spriteData.img.pipe(gulp.dest(path.build.sprites)); // путь, куда сохраняем картинку
-    spriteData.css.pipe(gulp.dest(path.build.spritesCss)); // путь, куда сохраняем стили
-});*/
-
-gulp.task('spritePNG', function() {
-    const spriteData =
-        gulp.src('src/img/sprite/*.*', '!' + path.src.src + 'img/sprites/svg-sprite/**/*.*') // путь, откуда берем картинки для спрайта
+        gulp.src('src/img/uploads/png-sprite-pack/**/*.png')
             .pipe(spritesmith({
                 imgName: 'sprite.png',
                 cssName: '_sprite.scss',
                 cssFormat: 'scss',
                 algorithm: 'binary-tree',
                 padding: 1,
-                cssTemplate: 'scss.template.mustache',
+                cssTemplate: 'sprite.scss.template.mustache',
                 cssVarMap: function(sprite) {
                     sprite.name = 's-' + sprite.name
-                }//
+                }
             }));
 
-    spriteData.img.pipe(gulp.dest('src/img/sprites')); // путь, куда сохраняем картинку
-    spriteData.css.pipe(gulp.dest('src/sass/')); // путь, куда сохраняем стили
+    spriteData.img.pipe(gulp.dest('src/img/sprites/png-sprite/')); // путь, куда сохраняем картинку
+    spriteData.css.pipe(gulp.dest('src/sass/templates/')); // путь, куда сохраняем стили
+    done();
 });
 
 
@@ -336,13 +341,6 @@ gulp.task('spritePNG', function() {
  		.pipe(gulp.dest('assets/fonts/icons'));
  });*/
 
-//copy sprite.svg
-gulp.task('copySpriteSVG', function () {
-    return gulp.src('src/img/sprites/*.svg')
-        .pipe(plumber())
-        .pipe(gulp.dest('build/img/sprites/'))
-});
-
 gulp.task('svgSpriteBuild', function () {
         return gulp.src(path.src.svg)
             .pipe(svgmin({
@@ -364,7 +362,7 @@ gulp.task('svgSpriteBuild', function () {
             .pipe(svgSprite({
                 mode: {
                     symbol: {
-                        sprite: '../svg-sprite/sprite.svg',
+                        sprite: '../sprite.svg',
                         render: {
                             scss: {
                                 dest: '../../../sass/icons/_sprite.scss',
@@ -375,27 +373,35 @@ gulp.task('svgSpriteBuild', function () {
                     }
                 }
 
-                /*dest : '.',
-                mode : {
-                    css : {
-                        dest : '.',
-                        sprite : 'img/sprites/sprite.svg',
-                        render : {
-                            css : {dest : 'css/sprite.css'},
-                            scss : {
-                                dest: '../../../sass/icons/_sprite.scss'
-                            }
-                        },
-                    }
-                }*/
             }))
             .pipe(gulp.dest(path.src.svgSprites));
 });
 
-//copy sprite.svg
-gulp.task('copySpriteSVG', function () {
-    return gulp.src(path.src.svgSprites)
-        .pipe(gulp.dest(path.build.sprites))
+gulp.task('images', function () {
+    return gulp.src([
+        path.src.img,
+        '!' + path.src.src + 'img/uploads/png-sprite-pack/**/*.*',
+        '!' + path.src.src + 'img/uploads/svg-sprite-pack/**/*.*'
+    ])
+        .pipe(gulp.dest(path.build.img))
+        .pipe(cache(imagemin([
+            imagemin.gifsicle({interlaced: true}),
+            imagemin.jpegtran({progressive: true}),
+            imagemin.optipng({optimizationLevel: 8}),
+            imagemin.svgo({
+                plugins: [
+                    {removeViewBox: true},
+                    {cleanupIDs: false}
+                ]
+            })
+        ],{
+                verbose: true
+            }
+        )))
+        .pipe(gulp.dest(path.build.img)) //И бросим в build
+        .pipe(browserSync.reload({
+            stream: true
+        }));
 });
 
 gulp.task('fonts', function() {
@@ -403,15 +409,97 @@ gulp.task('fonts', function() {
         .pipe(gulp.dest(path.build.fonts));
 });
 
-gulp.task('favicon', function() {
-    return gulp.src(path.src.src + 'favicon.ico')
-        .pipe(gulp.dest(path.build.html));
+// https://github.com/RealFaviconGenerator/gulp-real-favicon
+// http://riotweb.ru/blog/Generacij-favikonok-pri-pomoshhi-Gulp.html
+gulp.task('generate-favicon', function(done) {
+    realFavicon.generateFavicon({
+        masterPicture: 'app/images/master_picture.png',
+        dest: 'dist/images/icons',
+        iconsPath: '/',
+        design: {
+            ios: {
+                pictureAspect: 'noChange',
+                assets: {
+                    ios6AndPriorIcons: false,
+                    ios7AndLaterIcons: false,
+                    precomposedIcons: false,
+                    declareOnlyDefaultIcon: true
+                }
+            },
+            desktopBrowser: {},
+            windows: {
+                pictureAspect: 'noChange',
+                backgroundColor: '#da532c',
+                onConflict: 'override',
+                assets: {
+                    windows80Ie10Tile: false,
+                    windows10Ie11EdgeTiles: {
+                        small: false,
+                        medium: true,
+                        big: false,
+                        rectangle: false
+                    }
+                }
+            },
+            androidChrome: {
+                pictureAspect: 'noChange',
+                themeColor: '#ffffff',
+                manifest: {
+                    display: 'standalone',
+                    orientation: 'notSet',
+                    onConflict: 'override',
+                    declared: true
+                },
+                assets: {
+                    legacyIcon: false,
+                    lowResolutionIcons: false
+                }
+            }
+        },
+        settings: {
+            scalingAlgorithm: 'Mitchell',
+            errorOnImageTooSmall: false,
+            readmeFile: false,
+            htmlCodeFile: false,
+            usePathAsIs: false
+        },
+        markupFile: FAVICON_DATA_FILE
+    }, function() {
+        done();
+    });
+});
+
+gulp.task('inject-favicon-markups', function() {
+    return gulp.src(['dist/*.html', 'dist/dir/*.html'])
+        .pipe(realFavicon.injectFaviconMarkups(JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).favicon.html_code))
+        .pipe(gulp.dest('dist'));
+});
+
+gulp.task('check-for-favicon-update', function(done) {
+    var currentVersion = JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).version;
+    realFavicon.checkForUpdates(currentVersion, function(err) {
+        if (err) {
+            throw err;
+        }
+    });
 });
 
 gulp.task('htaccess', function() {
     return gulp.src(path.src.htaccess)
         .pipe(gulp.dest(path.build.htaccess))
 });
+
+//testing your build files
+gulp.task('validation', function () {
+    return gulp.src(path.build.html + '**/*.html')
+        .pipe(html5Lint());
+});
+
+gulp.task('cssLint', function () {
+    return gulp.src(path.src.sass)
+        .pipe(stylelint())
+});
+
 
 gulp.task('serve', function () {
     return browserSync(config);
@@ -423,7 +511,9 @@ gulp.task('clean', function (cb) {
     return rimraf(path.cleanBuild, cb)
 });
 
-
+gulp.task('clearCash', function () {
+    return cache.clearAll()
+});
 
 /*gulp.task('watch', function() {
     gulp.watch(path.watch.html, gulp.series('html'));

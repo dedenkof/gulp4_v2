@@ -15,8 +15,8 @@
 @import './icons/sprite';
 
 // *** Sprites ***
-@import './templates/sprite_template_mustache';
 @import './templates/mixins';
+@import './templates/sprite.scss';
 
 // *** Partials ***
 @import './partials/header';
