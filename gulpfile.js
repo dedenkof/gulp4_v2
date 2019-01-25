@@ -108,6 +108,8 @@ const options = { };
 
 const FAVICON_DATA_FILE = 'faviconData.json';
 
+let fontName = 'iconfont';
+
 const autoprefixerList = [
     'Chrome >= 45',
     'Firefox ESR',
@@ -323,23 +325,28 @@ gulp.task('spritePNG', function(done) {
 
 
 
- 	/*let fontName = 'iconfont';
-    gulp.task('iconfont', function () {
- 	gulp.src([path.src.svg])
+
+    gulp.task('iconFontBuild', function () {
+ 	return gulp.src([path.src.svg])
  		.pipe(iconfontCss({
- 			path: 'assets/sass/templates/_icons_template.scss',
+ 			path: 'src/sass/templates/_icons_template.scss',
  			fontName: fontName,
- 			targetPath: '../../sass/_icons.scss',
+ 			targetPath: '../../../sass/icons/_icons.scss',
  			fontPath: '../fonts/icons/',
  			svg: true
  		}))
  		.pipe(iconfont({
  			fontName: fontName,
+            prependUnicode: true,
+            fontHeight: 1001,
  			svg: true,
+            normalize: true,
  			formats: ['svg','eot','woff','ttf']
  		}))
- 		.pipe(gulp.dest('assets/fonts/icons'));
- });*/
+
+ 		.pipe(gulp.dest('src/fonts/icons/' + fontName));
+ });
+
 
 gulp.task('svgSpriteBuild', function () {
         return gulp.src(path.src.svg)
@@ -409,9 +416,15 @@ gulp.task('fonts', function() {
         .pipe(gulp.dest(path.build.fonts));
 });
 
+gulp.task('googleFonts', function () {
+    return gulp.src(path.src.fontsGoogle + 'fonts.list')
+        .pipe(googleWebFonts(options))
+        .pipe(gulp.dest(path.build.fonts));
+});
+
 // https://github.com/RealFaviconGenerator/gulp-real-favicon
 // http://riotweb.ru/blog/Generacij-favikonok-pri-pomoshhi-Gulp.html
-gulp.task('generate-favicon', function(done) {
+gulp.task('generateFavicon', function(done) {
     realFavicon.generateFavicon({
         masterPicture: 'app/images/master_picture.png',
         dest: 'dist/images/icons',
@@ -469,13 +482,13 @@ gulp.task('generate-favicon', function(done) {
     });
 });
 
-gulp.task('inject-favicon-markups', function() {
+gulp.task('injectFaviconMarkups', function() {
     return gulp.src(['dist/*.html', 'dist/dir/*.html'])
         .pipe(realFavicon.injectFaviconMarkups(JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).favicon.html_code))
         .pipe(gulp.dest('dist'));
 });
 
-gulp.task('check-for-favicon-update', function(done) {
+gulp.task('checkForFaviconUpdate', function(done) {
     var currentVersion = JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).version;
     realFavicon.checkForUpdates(currentVersion, function(err) {
         if (err) {
