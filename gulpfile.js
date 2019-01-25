@@ -108,7 +108,8 @@ const options = { };
 
 const FAVICON_DATA_FILE = 'faviconData.json';
 
-let fontName = 'iconfont';
+let fontName = 'iconfont',
+    runTimestamp = Math.round(Date.now()/1000);
 
 const autoprefixerList = [
     'Chrome >= 45',
@@ -323,10 +324,44 @@ gulp.task('spritePNG', function(done) {
     done();
 });
 
+gulp.task('svgSpriteBuild', function () {
+    return gulp.src(path.src.svg)
+        .pipe(svgmin({
+            js2svg: {
+                pretty: true
+            }
+        }))
+        .pipe(cheerio({
+            run: function ($) {
+                $('fill').removeAttr();
+                $('stroke').removeAttr();
+                $('style').removeAttr();
+                $('class').removeAttr();
+
+            },
+            parserOptions: {xmlMode: true}
+        }))
+        .pipe(replace('&gt;', '>'))
+        .pipe(svgSprite({
+            mode: {
+                symbol: {
+                    sprite: '../sprite.svg',
+                    render: {
+                        scss: {
+                            dest: '../../../../sass/icons/_sprite.scss',
+                            template: path.src.src + 'sass/templates/_sprite_template.scss'
+                        }
+                    },
+                    example: true
+                }
+            }
+
+        }))
+        .pipe(gulp.dest(path.src.svgSprites));
+});
 
 
-
-    gulp.task('iconFontBuild', function () {
+gulp.task('iconFontBuild', function () {
  	return gulp.src([path.src.svg])
  		.pipe(iconfontCss({
  			path: 'src/sass/templates/_icons_template.scss',
@@ -341,48 +376,15 @@ gulp.task('spritePNG', function(done) {
             fontHeight: 1001,
  			svg: true,
             normalize: true,
- 			formats: ['svg','eot','woff','ttf']
+ 			formats: ['svg','eot','woff','ttf'],
+            timestamp: runTimestamp,
  		}))
 
  		.pipe(gulp.dest('src/fonts/icons/' + fontName));
  });
 
 
-gulp.task('svgSpriteBuild', function () {
-        return gulp.src(path.src.svg)
-            .pipe(svgmin({
-                js2svg: {
-                    pretty: true
-                }
-            }))
-            .pipe(cheerio({
-                run: function ($) {
-                    $('fill').removeAttr();
-                    $('stroke').removeAttr();
-                    $('style').removeAttr();
-                    $('class').removeAttr();
 
-                },
-                parserOptions: {xmlMode: true}
-            }))
-            .pipe(replace('&gt;', '>'))
-            .pipe(svgSprite({
-                mode: {
-                    symbol: {
-                        sprite: '../sprite.svg',
-                        render: {
-                            scss: {
-                                dest: '../../../sass/icons/_sprite.scss',
-                                template: path.src.src + 'sass/templates/_sprite_template.scss'
-                            }
-                        },
-                        example: true
-                    }
-                }
-
-            }))
-            .pipe(gulp.dest(path.src.svgSprites));
-});
 
 gulp.task('images', function () {
     return gulp.src([
