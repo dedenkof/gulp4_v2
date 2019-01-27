@@ -17,6 +17,7 @@ const gulp = require('gulp'),
     gcmq = require('gulp-group-css-media-queries'),
     cleanCSS = require('gulp-clean-css'),
     minJS = require('gulp-uglify'),
+    babel = require('gulp-babel'),
     rename = require('gulp-rename'),
     includeFiles = require('gulp-rigger'),
     browserSync = require('browser-sync').create(),
@@ -278,6 +279,9 @@ gulp.task('scripts', function (){
         .pipe(includeFiles())
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
+        .pipe(babel({
+            presets: ['@babel/env']
+        }))
         .pipe(minJS()) //Сожмем наш js
         .pipe(concat('general.js'))
         .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
