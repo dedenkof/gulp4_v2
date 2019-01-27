@@ -38,6 +38,7 @@ const gulp = require('gulp'),
     optipng = require('imagemin-optipng'),
     html5Lint = require('gulp-html5-lint'),
     stylelint = require('stylelint'),
+    ghPages = require('gulp-gh-pages'),
     /* Generate favicon */
     realFavicon = require ('gulp-real-favicon'),
     fs = require('fs'),
@@ -102,6 +103,23 @@ const path = {
     cleanBuild: './build'
 };
 
+// Проверка существования файла/папки
+function fileExist(path) {
+    const fs = require('fs');
+    try {
+        fs.statSync(path);
+    } catch(err) {
+        return !(err && err.code === 'ENOENT');
+    }
+}
+
+// ЗАДАЧА, ВЫПОЛНЯЕМАЯ ТОЛЬКО ВРУЧНУЮ: Отправка в GH pages (ветку gh-pages репозитория)
+gulp.task('deploy', function() {
+    return gulp.src('/build/**/*')
+        .pipe(ghPages());
+});
+
+
 const onError = function(err) {
     notify.onError({
         title: 'Error in ' + err.plugin,
@@ -149,6 +167,14 @@ gulp.task('sftp', function (){
             remotePath: '/home/../public_html/'
         }));
 
+});
+
+// ЗАДАЧА: Сборка PHP
+gulp.task('php', function() {
+    return gulp.src(path.src.src + '/**/**/**/*.php')                  // какие файлы обрабатывать (путь из константы, маска имени)
+        .pipe(plumber({ errorHandler: onError }))
+        .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, ''))         // убираем комментарии <!--DEV ... -->
+        .pipe(gulp.dest(path.build.html));                // записываем файлы (путь из константы)
 });
 
 gulp.task('copyLibsCSS', function () {
@@ -426,6 +452,8 @@ gulp.task('fonts', function() {
     return gulp.src(path.src.fonts)
         .pipe(gulp.dest(path.build.fonts));
 });
+
+
 
 gulp.task('googleFonts', function () {
     return gulp.src(path.src.fontsGoogle + 'fonts.list')
