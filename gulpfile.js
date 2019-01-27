@@ -113,12 +113,6 @@ function fileExist(path) {
     }
 }
 
-// ЗАДАЧА, ВЫПОЛНЯЕМАЯ ТОЛЬКО ВРУЧНУЮ: Отправка в GH pages (ветку gh-pages репозитория)
-gulp.task('deploy', function() {
-    return gulp.src('/build/**/*')
-        .pipe(ghPages());
-});
-
 
 const onError = function(err) {
     notify.onError({
@@ -158,27 +152,32 @@ const config = {
     logPrefix: "Frontend_History_Action"
 };
 
-gulp.task('sftp', function (){
-    return gulp.src(path.build)
+// ЗАДАЧА, ВЫПОЛНЯЕМАЯ ТОЛЬКО ВРУЧНУЮ: Отправка в GH pages (ветку gh-pages репозитория)
+gulp.task('deploy', () =>
+    gulp.src('/build/**/*')
+        .pipe(ghPages())
+);
+
+gulp.task('sftp', () =>
+    gulp.src(path.build)
         .pipe(sftp({
             host: 'website.com',
             user: 'john',
             pass: '12345',
             remotePath: '/home/../public_html/'
-        }));
-
-});
+        }))
+);
 
 // ЗАДАЧА: Сборка PHP
-gulp.task('php', function() {
-    return gulp.src(path.src.src + '/**/**/**/*.php')                  // какие файлы обрабатывать (путь из константы, маска имени)
+gulp.task('php', () =>
+     gulp.src(path.src.src + '/**/**/**/*.php')                  // какие файлы обрабатывать (путь из константы, маска имени)
         .pipe(plumber({ errorHandler: onError }))
         .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, ''))         // убираем комментарии <!--DEV ... -->
-        .pipe(gulp.dest(path.build.html));                // записываем файлы (путь из константы)
-});
+        .pipe(gulp.dest(path.build.html))                // записываем файлы (путь из константы)
+);
 
-gulp.task('copyLibsCSS', function () {
-    return gulp.src(npmDist({
+gulp.task('copyLibsCSS', () =>
+    gulp.src(npmDist({
         excludes: [
             '/**/*.txt',
             '/**/*.js',
@@ -186,11 +185,11 @@ gulp.task('copyLibsCSS', function () {
         ]
     }), { base: './node_modules' })
         .pipe(flatten({ includeParents: 1}))
-        .pipe(gulp.dest(path.build.css));
-});
+        .pipe(gulp.dest(path.build.css))
+);
 
-gulp.task('copyLibsJS', function () {
-    return gulp.src(npmDist({
+gulp.task('copyLibsJS', () =>
+   gulp.src(npmDist({
         excludes: [
             '/**/*.txt',
             '/**/*.css',
@@ -200,11 +199,11 @@ gulp.task('copyLibsJS', function () {
         ]
     }), { base: './node_modules' })
         .pipe(flatten({ includeParents: 1}))
-        .pipe(gulp.dest(path.build.js));
-});
+        .pipe(gulp.dest(path.build.js))
+);
 
-gulp.task('html', function () {
-    return gulp.src(path.src.html)
+gulp.task('html', () =>
+     gulp.src(path.src.html)
         .pipe(plumber({ errorHandler: onError }))
         .pipe(includeFiles())
         /*.pipe(htmlmin({
@@ -213,11 +212,11 @@ gulp.task('html', function () {
          }))*/
         .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, '')) // убираем комментарии <!--DEV ... -->
         .pipe(gulp.dest(path.build.html))
-        .on('end', browserSync.reload);
-});
+        .on('end', browserSync.reload)
+);
 
-gulp.task('pug', function () {
-    return gulp.src('src/pug/pages/*.pug')
+gulp.task('pug', () =>
+   gulp.src('src/pug/pages/*.pug')
         .pipe(plumber({ errorHandler: onError }))
         .pipe(includeFiles())
         .pipe(pug({pretty: true}))
@@ -227,11 +226,11 @@ gulp.task('pug', function () {
          }))*/
         .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, '')) // убираем комментарии <!--DEV ... -->
         .pipe(gulp.dest(path.build.html))
-        .on('end', browserSync.reload);
-});
+        .on('end', browserSync.reload)
+);
 
-gulp.task('sass', function (){
-    return gulp.src(path.src.sass)
+gulp.task('sass', () =>
+    gulp.src(path.src.sass)
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
         .pipe(sass({outputStyle: 'expanded'}))
@@ -244,12 +243,12 @@ gulp.task('sass', function (){
         .pipe(gulp.dest(path.build.css))
         .pipe(browserSync.reload({
             stream: true
-        }));
+        }))
 
-});
+);
 
-gulp.task('stylus', function (){
-    return gulp.src('src/stylus/main.styl')
+gulp.task('stylus', () =>
+    gulp.src('src/stylus/main.styl')
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
         .pipe(stylus({include_css: true}))
@@ -262,12 +261,12 @@ gulp.task('stylus', function (){
         .pipe(gulp.dest(path.build.css))
         .pipe(browserSync.reload({
             stream: true
-        }));
+        }))
 
-});
+);
 
-gulp.task('cssLibs', function () {
-    return gulp.src([path.src.cssLib, path.libsCSS.bootstrapCSS, path.libsCSS.bootstrapGrid])
+gulp.task('cssLibs', () =>
+    gulp.src([path.src.cssLib, path.libsCSS.bootstrapCSS, path.libsCSS.bootstrapGrid])
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
         .pipe(autoprefixer({ browsers: autoprefixerList, cascade: false}))
@@ -281,11 +280,12 @@ gulp.task('cssLibs', function () {
         .pipe(gulp.dest(path.build.css))
         .pipe(browserSync.reload({
             stream: true
-        }));
-});
+        }))
+);
 
-gulp.task('scriptsLibs', function (){
-    return gulp.src([path.libsJS.jquery, path.libsJS.bootstrapJS, path.src.jsLib])
+
+gulp.task('scriptsLibs', () =>
+    gulp.src([path.libsJS.jquery, path.libsJS.bootstrapJS, path.src.jsLib])
         //.pipe(includeFiles())
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
@@ -296,18 +296,23 @@ gulp.task('scriptsLibs', function (){
         .pipe(gulp.dest(path.build.js))
         .pipe(browserSync.reload({
             stream: true
-        }));
+        }))
 
-});
+);
 
-gulp.task('scripts', function (){
-    return gulp.src(path.src.js)
+gulp.task('scripts', () =>
+    gulp.src(path.src.js)
         .pipe(includeFiles())
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
         .pipe(babel({
             presets: ['@babel/env']
         }))
+        /*
+        test TODO
+        .pipe(babel({
+            presets: ['env']
+        }))*/
         .pipe(minJS()) //Сожмем наш js
         .pipe(concat('general.js'))
         .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
@@ -315,31 +320,31 @@ gulp.task('scripts', function (){
         .pipe(gulp.dest(path.build.js))
         .pipe(browserSync.reload({
             stream: true
-        }));
+        }))
 
-});
+);
 
-gulp.task('inject', function () {
+gulp.task('inject', () => {
 
-    const injectStyles = gulp.src(path.build.injectCSS, { read: false });
+    const injectStyles = gulp.src(path.build.injectCSS, {read: false});
 
-    const injectScripts = gulp.src(path.build.injectJS, { read: false });
+    const injectScripts = gulp.src(path.build.injectJS, {read: false});
 
-    return gulp.src(path.src.html)
-        .pipe(flatten({ subPath: [1, 1]}))
+    gulp.src(path.src.html)
+        .pipe(flatten({subPath: [1, 1]}))
         .pipe(includeFiles())
 
-        .pipe(inject(injectStyles, { ignorePath: 'src', addRootSlash: false, relative: true }))
-        .pipe(inject(injectScripts, { ignorePath: 'src', addRootSlash: false, relative: true }))
+        .pipe(inject(injectStyles, {ignorePath: 'src', addRootSlash: false, relative: true}))
+        .pipe(inject(injectScripts, {ignorePath: 'src', addRootSlash: false, relative: true}))
 
         .pipe(gulp.dest(path.build.html))
         .pipe(browserSync.reload({
             stream: true
-        }));
+        }))
 });
 
 
-gulp.task('spritePNG', function(done) {
+gulp.task('spritePNG', (done) => {
     const spriteData =
         gulp.src('src/img/uploads/png-sprite-pack/**/*.png')
             .pipe(spritesmith({
@@ -359,8 +364,8 @@ gulp.task('spritePNG', function(done) {
     done();
 });
 
-gulp.task('svgSpriteBuild', function () {
-    return gulp.src(path.src.svg)
+gulp.task('svgSpriteBuild', () =>
+    gulp.src(path.src.svg)
         .pipe(svgmin({
             js2svg: {
                 pretty: true
@@ -392,12 +397,12 @@ gulp.task('svgSpriteBuild', function () {
             }
 
         }))
-        .pipe(gulp.dest(path.src.svgSprites));
-});
+        .pipe(gulp.dest(path.src.svgSprites))
+);
 
 
-gulp.task('iconFontBuild', function () {
- 	return gulp.src([path.src.svg])
+gulp.task('iconFontBuild', () =>
+ 	gulp.src([path.src.svg])
  		.pipe(iconfontCss({
  			path: 'src/sass/templates/_icons_template.scss',
  			fontName: fontName,
@@ -415,14 +420,15 @@ gulp.task('iconFontBuild', function () {
             timestamp: runTimestamp,
  		}))
 
- 		.pipe(gulp.dest('src/fonts/icons/' + fontName));
- });
+ 		//.pipe(gulp.dest('src/fonts/icons/' + fontName))
+        .pipe(gulp.dest(`src/fonts/icons/${fontName}`))
+ );
 
 
 
 
-gulp.task('images', function () {
-    return gulp.src([
+gulp.task('images', () =>
+    gulp.src([
         path.src.img,
         '!' + path.src.src + 'img/uploads/png-sprite-pack/**/*.*',
         '!' + path.src.src + 'img/uploads/svg-sprite-pack/**/*.*'
@@ -445,28 +451,28 @@ gulp.task('images', function () {
         .pipe(gulp.dest(path.build.img)) //И бросим в build
         .pipe(browserSync.reload({
             stream: true
-        }));
-});
+        }))
+);
 
-gulp.task('fonts', function() {
-    return gulp.src(path.src.fonts)
-        .pipe(gulp.dest(path.build.fonts));
-});
+gulp.task('fonts', () =>
+    gulp.src(path.src.fonts)
+        .pipe(gulp.dest(path.build.fonts))
+);
 
 
 
-gulp.task('googleFonts', function () {
-    return gulp.src(path.src.fontsGoogle + 'fonts.list')
+gulp.task('googleFonts', () =>
+    gulp.src(path.src.fontsGoogle + 'fonts.list')
         .pipe(googleWebFonts(options))
-        .pipe(gulp.dest(path.build.fonts));
-});
+        .pipe(gulp.dest(path.build.fonts))
+);
 
 /*Generate the icons. This task takes a few seconds to complete.
 You should run it at least once to create the icons. Then,
 you should run it whenever RealFaviconGenerator updates its
 package (see the check-for-favicon-update task below).*/
 
-gulp.task('generate-favicon', function(done) {
+gulp.task('generate-favicon', (done) => {
     realFavicon.generateFavicon({
         masterPicture: 'src/img/favicons/ORIGIN_FAVICON' + path.src.extPNG,
         dest: 'src/img/favicons/',
@@ -520,7 +526,7 @@ gulp.task('generate-favicon', function(done) {
             errorOnImageTooSmall: false
         },
         markupFile: FAVICON_DATA_FILE
-    }, function() {
+    }, () => {
         done();
     });
 });
@@ -529,18 +535,18 @@ gulp.task('generate-favicon', function(done) {
 this task whenever you modify a page. You can keep this task
 as is or refactor your existing HTML pipeline.*/
 
-gulp.task('inject-favicon-markups', function() {
-    return gulp.src('build/*.html')
+gulp.task('inject-favicon-markups', () =>
+    gulp.src('build/*.html')
         .pipe(realFavicon.injectFaviconMarkups(JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).favicon.html_code))
-        .pipe(gulp.dest(path.build.html));
-});
+        .pipe(gulp.dest(path.build.html))
+);
 
 /*Check for updates on RealFaviconGenerator (think: Apple has just
 released a new Touch icon along with the latest version of iOS).
 Run this task from time to time. Ideally, make it part of your
 continuous integration system.*/
 
-gulp.task('check-for-favicon-update', function(done) {
+gulp.task('check-for-favicon-update', (done) => {
     const currentVersion = JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).version;
     realFavicon.checkForUpdates(currentVersion, function(err) {
         if (err) {
@@ -551,36 +557,37 @@ gulp.task('check-for-favicon-update', function(done) {
 });
 
 
-gulp.task('htaccess', function() {
-    return gulp.src(path.src.htaccess)
+gulp.task('htaccess', () =>
+    gulp.src(path.src.htaccess)
         .pipe(gulp.dest(path.build.htaccess))
-});
+);
 
 //testing your build files
-gulp.task('validation', function () {
-    return gulp.src(path.build.html + '**/*.html')
-        .pipe(html5Lint());
-});
+gulp.task('validation', () =>
+    gulp.src(`${path.build.html}**/*.html`)
 
-gulp.task('cssLint', function () {
-    return gulp.src(path.src.sass)
+        .pipe(html5Lint())
+);
+
+gulp.task('cssLint', () =>
+    gulp.src(path.src.sass)
         .pipe(stylelint())
-});
+);
 
 
-gulp.task('serve', function () {
-    return browserSync(config);
-});
+gulp.task('serve', () =>
+    browserSync(config)
+);
 
 
 
-gulp.task('clean', function (cb) {
-    return rimraf(path.cleanBuild, cb)
-});
+gulp.task('clean', (cb) =>
+    rimraf(path.cleanBuild, cb)
+);
 
-gulp.task('clearCash', function () {
-    return cache.clearAll()
-});
+gulp.task('clearCash', () =>
+    cache.clearAll()
+);
 
 /*gulp.task('watch', function() {
     gulp.watch(path.watch.html, gulp.series('html'));
