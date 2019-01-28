@@ -121,7 +121,13 @@ const onError = function(err) {
     this.emit('end');
 };
 
-const options = { };
+// Google Web Fonts options
+const options = {
+    relativePaths: true,
+    fontsDir: 'googlefonts/',
+    cssDir: 'googlecss/',
+    cssFilename: 'googlefonts.css'
+};
 
 // File where the favicon markups are stored
 const FAVICON_DATA_FILE = 'faviconData.json';
@@ -286,7 +292,7 @@ gulp.task('cssLibs', () =>
 
 gulp.task('scriptsLibs', () =>
     gulp.src([path.libsJS.jquery, path.libsJS.bootstrapJS, path.src.jsLib])
-        //.pipe(includeFiles())
+        .pipe(includeFiles())
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
         //.pipe(minJS()) //Сожмем наш js
@@ -308,11 +314,6 @@ gulp.task('scripts', () =>
         .pipe(babel({
             presets: ['@babel/env']
         }))
-        /*
-        test TODO
-        .pipe(babel({
-            presets: ['env']
-        }))*/
         .pipe(minJS()) //Сожмем наш js
         .pipe(concat('general.js'))
         .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
@@ -354,7 +355,7 @@ gulp.task('spritePNG', (done) => {
                 algorithm: 'binary-tree',
                 padding: 1,
                 cssTemplate: 'sprite.scss.template.mustache',
-                cssVarMap: function(sprite) {
+                cssVarMap: (sprite) => {
                     sprite.name = 's-' + sprite.name
                 }
             }));
@@ -372,7 +373,7 @@ gulp.task('svgSpriteBuild', () =>
             }
         }))
         .pipe(cheerio({
-            run: function ($) {
+            run: ($) => {
                 $('fill').removeAttr();
                 $('stroke').removeAttr();
                 $('style').removeAttr();
@@ -419,8 +420,6 @@ gulp.task('iconFontBuild', () =>
  			formats: ['svg','eot','woff','ttf'],
             timestamp: runTimestamp,
  		}))
-
- 		//.pipe(gulp.dest('src/fonts/icons/' + fontName))
         .pipe(gulp.dest(`src/fonts/icons/${fontName}`))
  );
 
@@ -430,8 +429,8 @@ gulp.task('iconFontBuild', () =>
 gulp.task('images', () =>
     gulp.src([
         path.src.img,
-        '!' + path.src.src + 'img/uploads/png-sprite-pack/**/*.*',
-        '!' + path.src.src + 'img/uploads/svg-sprite-pack/**/*.*'
+        `!${path.src.src}img/uploads/png-sprite-pack/**/*.*`,
+        `!${path.src.src}img/uploads/svg-sprite-pack/**/*.*`
     ])
         .pipe(gulp.dest(path.build.img))
         .pipe(cache(imagemin([
@@ -454,16 +453,16 @@ gulp.task('images', () =>
         }))
 );
 
-gulp.task('fonts', () =>
-    gulp.src(path.src.fonts)
-        .pipe(gulp.dest(path.build.fonts))
-);
-
 
 
 gulp.task('googleFonts', () =>
-    gulp.src(path.src.fontsGoogle + 'fonts.list')
+    gulp.src('./googlefonts.list')
         .pipe(googleWebFonts(options))
+        .pipe(gulp.dest(`${path.build.fonts}google`))
+);
+
+gulp.task('fonts', () =>
+    gulp.src([path.src.fonts, `!fonts.list`])
         .pipe(gulp.dest(path.build.fonts))
 );
 

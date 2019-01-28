@@ -1,0 +1,16 @@
+
+
+ // autoload plugin
+ gp = require('gulp-load-plugins')();
+ пример
+ gulp.task('google-fonts', function () {
+ return gulp.src(path.src.fontsGoogle + 'fonts.list')
+ .pipe(gp.googleWebFonts(options))
+ .pipe(gulp.dest(path.build.fonts));
+ });
+
+// pug
+
+// csscomb
+ https://habr.com/ru/post/230589/
+*/
