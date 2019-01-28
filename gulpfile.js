@@ -398,7 +398,7 @@ gulp.task('svgSpriteBuild', () =>
                     sprite: '../sprite.svg',
                     render: {
                         scss: {
-                            dest: '../../../sass/icons/_sprite.scss',
+                            dest: '../../../../sass/icons/_sprite.scss',
                             template: path.src.src + 'sass/templates/_sprite_template.scss'
                         }
                     }
