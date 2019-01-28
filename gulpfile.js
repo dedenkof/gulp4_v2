@@ -147,6 +147,7 @@ const autoprefixerList = [
     'Opera >= 30'
 ];
 
+// browserSync config
 const config = {
     server: {
         baseDir: "./build"
@@ -410,7 +411,7 @@ gulp.task('svgSpriteBuild', () =>
 
 
 gulp.task('iconFontBuild', () =>
- 	gulp.src([path.src.svg])
+ 	gulp.src(path.src.svg)
  		.pipe(iconfontCss({
  			path: 'src/sass/templates/_icons_template.scss',
  			fontName: fontName,
@@ -436,8 +437,7 @@ gulp.task('iconFontBuild', () =>
 gulp.task('images', () =>
     gulp.src([
         path.src.img,
-        `!${path.src.src}img/uploads/png-sprite-pack/**/*.*`,
-        `!${path.src.src}img/uploads/svg-sprite-pack/**/*.*`
+        `!${path.src.src}img/uploads/*-pack/**/*.*`
     ])
         .pipe(gulp.dest(path.build.img))
         .pipe(cache(imagemin([
@@ -451,7 +451,7 @@ gulp.task('images', () =>
                 ]
             })
         ],{
-                verbose: true
+                //verbose: true
             }
         )))
         .pipe(gulp.dest(path.build.img)) //И бросим в build
@@ -469,7 +469,7 @@ gulp.task('googleFonts', () =>
 );
 
 gulp.task('fonts', () =>
-    gulp.src([path.src.fonts, `!fonts.list`])
+    gulp.src(path.src.fonts)
         .pipe(gulp.dest(path.build.fonts))
 );
 
