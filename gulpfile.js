@@ -57,6 +57,7 @@ const path = {
         spritesCss: 'build/css/partial/',
         svg: 'build/img/svg/',
         injectCSS: 'build/css/**/*.css',
+        injectFontsCSS: 'build/fonts/**/*.css',
         injectJS: 'build/js/**/*.js'
     },
     src: { //Пути откуда брать исходники
@@ -325,11 +326,15 @@ gulp.task('scripts', () =>
 
 );
 
-gulp.task('inject', () => {
+gulp.task('inject', (done) => {
 
     const injectStyles = gulp.src(path.build.injectCSS, {read: false});
 
     const injectScripts = gulp.src(path.build.injectJS, {read: false});
+
+    const injectStyleFonts = gulp.src(path.build.injectFontsCSS, {read: false});
+
+
 
     gulp.src(path.src.html)
         .pipe(flatten({subPath: [1, 1]}))
@@ -337,11 +342,13 @@ gulp.task('inject', () => {
 
         .pipe(inject(injectStyles, {ignorePath: 'src', addRootSlash: false, relative: true}))
         .pipe(inject(injectScripts, {ignorePath: 'src', addRootSlash: false, relative: true}))
+        .pipe(inject(injectStyleFonts, {ignorePath: 'src', addRootSlash: false, relative: true}))
 
         .pipe(gulp.dest(path.build.html))
         .pipe(browserSync.reload({
             stream: true
-        }))
+        }));
+    done();
 });
 
 
@@ -365,6 +372,7 @@ gulp.task('spritePNG', (done) => {
     done();
 });
 
+//https://stackoverrun.com/ru/q/8204890
 gulp.task('svgSpriteBuild', () =>
     gulp.src(path.src.svg)
         .pipe(svgmin({
@@ -389,11 +397,10 @@ gulp.task('svgSpriteBuild', () =>
                     sprite: '../sprite.svg',
                     render: {
                         scss: {
-                            dest: '../../../../sass/icons/_sprite.scss',
+                            dest: '../../../sass/icons/_sprite.scss',
                             template: path.src.src + 'sass/templates/_sprite_template.scss'
                         }
-                    },
-                    example: true
+                    }
                 }
             }
 
@@ -584,7 +591,7 @@ gulp.task('clean', (cb) =>
     rimraf(path.cleanBuild, cb)
 );
 
-gulp.task('clearCash', () =>
+gulp.task('clearCache', () =>
     cache.clearAll()
 );
 
