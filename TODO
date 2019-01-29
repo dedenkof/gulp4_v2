@@ -90,3 +90,25 @@ function fileExist(path) {
 
 * comb and beauty and clear code
 * delete unnecessary part of code
+* priority include files js and css
+
+TASK PRIORITY
+
+---//  clear
+       htaccess
+       googleFonts
+       fonts
+       Sass || stylus
+       cssLibs && scriptsLibs
+       copyLibsCSS && copyLibsJS
+       scripts
+
+       pug && html && php
+
+       generate-favicon
+       spritePNG
+       svgSpriteBuild
+       iconFontBuild
+       images
+
+       inject-favicon-markups

@@ -45,8 +45,10 @@ const gulp = require('gulp'),
     /* //Generate favicon */
     npmDist = require('gulp-npm-dist');
 
+// INITIAL path value
+
 const path = {
-    build: { //Тут мы укажем куда складывать готовые после сборки файлы
+    build: {
         html: 'build/',
         htaccess: 'build/',
         js: 'build/js/',
@@ -60,17 +62,18 @@ const path = {
         injectFontsCSS: 'build/fonts/**/*.css',
         injectJS: 'build/js/**/*.js'
     },
-    src: { //Пути откуда брать исходники
+    src: {
         src: 'src/',
-        mainHTML: 'src/index.html', //Синтаксис src/*.html говорит gulp что мы хотим взять все файлы с расширением .html
-        html: 'src/*.html', //Синтаксис src/*.html говорит gulp что мы хотим взять все файлы с расширением .html
+        php: 'src/**/**/*.php',
+        mainHTML: 'src/index.html',
+        html: 'src/*.html',
         favi: 'src/*.ico',
-        js: 'src/js/*.js',//В стилях и скриптах нам понадобятся только main файлы
-        jsLib: 'src/js/libs/**/*.js',//В стилях и скриптах нам понадобятся только main файлы
+        js: 'src/js/*.js',
+        jsLib: 'src/js/libs/**/*.js',
         css: 'src/css/**/*.css',
         cssLib: 'src/css/libs/**/*.css',
         sass: 'src/sass/**/*.scss',
-        img: 'src/img/**/*.{png,jpg,gif,svg}', //Синтаксис img/**/*.* означает - взять все файлы всех расширений из папки и из вложенных каталогов
+        img: 'src/img/**/*.{png,jpg,gif,svg}',
         fonts: 'src/fonts/**/*.*',
         fontsGoogle: 'src/fonts/',
         htaccess: 'src/.htaccess',
@@ -85,11 +88,13 @@ const path = {
         bootstrapGrid: 'node_modules/bootstrap/dist/css/bootstrap-grid.css',
     },
     libsJS: {
-        jquery: 'node_modules/jquery/dist/jquery.js', // Берем jQuery
+        jquery: 'node_modules/jquery/dist/jquery.js',
         bootstrapJS: 'node_modules/bootstrap/dist/js/bootstrap.js'
     },
     watch: {
         html: 'src/**/*.html',
+        php: 'src/**/*.php',
+        pug: 'src/pug/**/*.pug',
         favi: 'src/*.ico',
         js: 'src/js/**/*.js',
         css: 'src/css/**/*.scss',
@@ -104,23 +109,7 @@ const path = {
     cleanBuild: './build'
 };
 
-// Проверка существования файла/папки
-function fileExist(path) {
-    const fs = require('fs');
-    try {
-        fs.statSync(path);
-    } catch(err) {
-        return !(err && err.code === 'ENOENT');
-    }
-}
-
-
-const onError = function(err) {
-    notify.onError({
-        title: 'Error in ' + err.plugin,
-    })(err);
-    this.emit('end');
-};
+// CONFIG settings file
 
 // Google Web Fonts options
 const options = {
@@ -133,9 +122,11 @@ const options = {
 // File where the favicon markups are stored
 const FAVICON_DATA_FILE = 'faviconData.json';
 
+// Fonts name iconFontBuild (fonts from svg icons)
 const fontName = 'iconfont',
     runTimestamp = Math.round(Date.now()/1000);
 
+// Config autoprefixer add prefix to the browsers
 const autoprefixerList = [
     'Chrome >= 45',
     'Firefox ESR',
@@ -160,12 +151,21 @@ const config = {
     logPrefix: "Frontend_History_Action"
 };
 
-// ЗАДАЧА, ВЫПОЛНЯЕМАЯ ТОЛЬКО ВРУЧНУЮ: Отправка в GH pages (ветку gh-pages репозитория)
+// Notify error
+const onError = function(err) {
+    notify.onError({
+        title: 'Error in ' + err.plugin,
+    })(err);
+    this.emit('end');
+};
+
+// send to GH pages (branch gh-pages repository (manually))
 gulp.task('deploy', () =>
     gulp.src('/build/**/*')
         .pipe(ghPages())
 );
 
+// deploy the project to the hosting via sftp protocol (manually)
 gulp.task('sftp', () =>
     gulp.src(path.build)
         .pipe(sftp({
@@ -176,14 +176,15 @@ gulp.task('sftp', () =>
         }))
 );
 
-// ЗАДАЧА: Сборка PHP
+// Deploy php files (manually)
 gulp.task('php', () =>
-     gulp.src(path.src.src + '/**/**/**/*.php')                  // какие файлы обрабатывать (путь из константы, маска имени)
+     gulp.src(path.src.php)
         .pipe(plumber({ errorHandler: onError }))
-        .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, ''))         // убираем комментарии <!--DEV ... -->
-        .pipe(gulp.dest(path.build.html))                // записываем файлы (путь из константы)
+        .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, ''))// убираем комментарии <!--DEV ... -->
+        .pipe(gulp.dest(path.build.html))
 );
 
+// Listing package.json dependencies and copy css libs files of them  to build/css
 gulp.task('copyLibsCSS', () =>
     gulp.src(npmDist({
         excludes: [
@@ -193,9 +194,20 @@ gulp.task('copyLibsCSS', () =>
         ]
     }), { base: './node_modules' })
         .pipe(flatten({ includeParents: 1}))
+        .pipe(sourcemaps.init())
+        .pipe(autoprefixer({ browsers: autoprefixerList, cascade: false}))
+        .pipe(gcmq())
+        //.pipe(concat('libs.css'))
+        //.pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
+        .pipe(cleanCSS({level: 2}))
+        .pipe(sourcemaps.write('.', {addComment: false}))
         .pipe(gulp.dest(path.build.css))
+        .pipe(browserSync.reload({
+            stream: true
+        }))
 );
 
+// Listing package.json dependencies and copy js libs files of them  to build/css
 gulp.task('copyLibsJS', () =>
    gulp.src(npmDist({
         excludes: [
@@ -207,9 +219,19 @@ gulp.task('copyLibsJS', () =>
         ]
     }), { base: './node_modules' })
         .pipe(flatten({ includeParents: 1}))
+       .pipe(plumber({ errorHandler: onError }))
+       .pipe(sourcemaps.init())
+       .pipe(minJS())
+       //.pipe(concat('libs.js'))
+       //.pipe(rename({suffix: '.min'}))
+       .pipe(sourcemaps.write('.', {addComment: false}))
         .pipe(gulp.dest(path.build.js))
+       .pipe(browserSync.reload({
+           stream: true
+       }))
 );
 
+// Deploy html files (rigger template from ./tempalte )
 gulp.task('html', () =>
      gulp.src(path.src.html)
         .pipe(plumber({ errorHandler: onError }))
@@ -218,11 +240,12 @@ gulp.task('html', () =>
          collapseWhitespace: true,
          removeComments: false
          }))*/
-        .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, '')) // убираем комментарии <!--DEV ... -->
+        .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, ''))
         .pipe(gulp.dest(path.build.html))
         .on('end', browserSync.reload)
 );
 
+// Deploy html via pug (manually)
 gulp.task('pug', () =>
    gulp.src('src/pug/pages/*.pug')
         .pipe(plumber({ errorHandler: onError }))
@@ -232,11 +255,12 @@ gulp.task('pug', () =>
          collapseWhitespace: true,
          removeComments: false
          }))*/
-        .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, '')) // убираем комментарии <!--DEV ... -->
+        .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, ''))
         .pipe(gulp.dest(path.build.html))
         .on('end', browserSync.reload)
 );
 
+// Deploy css via sass preprocessor
 gulp.task('sass', () =>
     gulp.src(path.src.sass)
         .pipe(plumber({ errorHandler: onError }))
@@ -255,6 +279,7 @@ gulp.task('sass', () =>
 
 );
 
+// Deploy css via stylus preprocessor (manually)
 gulp.task('stylus', () =>
     gulp.src('src/stylus/main.styl')
         .pipe(plumber({ errorHandler: onError }))
@@ -273,8 +298,9 @@ gulp.task('stylus', () =>
 
 );
 
+// Copy src/css/libs and node_modules source to build/css
 gulp.task('cssLibs', () =>
-    gulp.src([path.src.cssLib, path.libsCSS.bootstrapCSS, path.libsCSS.bootstrapGrid])
+    gulp.src(path.src.cssLib)
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
         .pipe(autoprefixer({ browsers: autoprefixerList, cascade: false}))
@@ -291,15 +317,15 @@ gulp.task('cssLibs', () =>
         }))
 );
 
-
+// Copy src/js/libs and node_modules source to build/js
 gulp.task('scriptsLibs', () =>
-    gulp.src([path.libsJS.jquery, path.libsJS.bootstrapJS, path.src.jsLib])
+    gulp.src(path.src.jsLib)
         .pipe(includeFiles())
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
         //.pipe(minJS()) //Сожмем наш js
         //.pipe(concat('libs.js'))
-        //.pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
+        //.pipe(rename({suffix: '.min'}))
         .pipe(sourcemaps.write('.', {addComment: false}))
         .pipe(gulp.dest(path.build.js))
         .pipe(browserSync.reload({
@@ -316,9 +342,9 @@ gulp.task('scripts', () =>
         .pipe(babel({
             presets: ['@babel/env']
         }))
-        .pipe(minJS()) //Сожмем наш js
+        .pipe(minJS())
         .pipe(concat('general.js'))
-        .pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
+        .pipe(rename({suffix: '.min'}))
         .pipe(sourcemaps.write('.', {addComment: false}))
         .pipe(gulp.dest(path.build.js))
         .pipe(browserSync.reload({
@@ -373,7 +399,7 @@ gulp.task('spritePNG', (done) => {
     done();
 });
 
-//https://stackoverrun.com/ru/q/8204890
+
 gulp.task('svgSpriteBuild', () =>
     gulp.src(path.src.svg)
         .pipe(svgmin({
@@ -451,7 +477,7 @@ gulp.task('images', () =>
                 ]
             })
         ],{
-                //verbose: true
+                //verbose: true output status treatment img files
             }
         )))
         .pipe(gulp.dest(path.build.img)) //И бросим в build
@@ -595,8 +621,10 @@ gulp.task('clearCache', () =>
     cache.clearAll()
 );
 
-/*gulp.task('watch', function() {
+gulp.task('watch', function() {
+    gulp.watch(path.watch.sass, gulp.series('pug'));
     gulp.watch(path.watch.html, gulp.series('html'));
+    gulp.watch(path.watch.php, gulp.series('php'));
     gulp.watch(path.watch.sass, gulp.series('sass'));
     gulp.watch(path.watch.css, gulp.series('cssLibs'));
     gulp.watch(path.watch.js, gulp.series('scripts'));
@@ -605,13 +633,14 @@ gulp.task('clearCache', () =>
     gulp.watch(path.watch.fonts, gulp.series('fonts'));
 });
 
+/*
 gulp.task('assets', gulp.series(['html', 'sass', 'cssLibs', 'scripts', 'scriptsLibs', 'images', 'fonts']));
 
 
 gulp.task('build', gulp.series('clean', 'assets', gulp.parallel('inject')));
 
 
-gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'serve')]));*/
+gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'serve')])); */
 
 
 
