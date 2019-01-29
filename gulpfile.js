@@ -20,7 +20,7 @@ const gulp = require('gulp'),
     babel = require('gulp-babel'),
     rename = require('gulp-rename'),
     includeFiles = require('gulp-rigger'),
-    browserSync = require('browser-sync').create(),
+    browserSync = require('browser-sync'),
     inject = require('gulp-inject'),
     rimraf = require('rimraf'),
     imagemin = require('gulp-imagemin'),
@@ -340,7 +340,7 @@ gulp.task('scripts', () =>
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
         .pipe(babel({
-            presets: ['@babel/env']
+            presets: ['@babel/preset-env']
         }))
         .pipe(minJS())
         .pipe(concat('general.js'))
@@ -355,13 +355,9 @@ gulp.task('scripts', () =>
 
 gulp.task('inject', (done) => {
 
-    const injectStyles = gulp.src(path.build.injectCSS, {read: false});
+    const injectStyles = gulp.src([path.build.injectCSS, path.build.injectFontsCSS], {read: false});
 
     const injectScripts = gulp.src(path.build.injectJS, {read: false});
-
-    const injectStyleFonts = gulp.src(path.build.injectFontsCSS, {read: false});
-
-
 
     gulp.src(path.src.html)
         .pipe(flatten({subPath: [1, 1]}))
@@ -369,7 +365,6 @@ gulp.task('inject', (done) => {
 
         .pipe(inject(injectStyles, {ignorePath: 'src', addRootSlash: false, relative: true}))
         .pipe(inject(injectScripts, {ignorePath: 'src', addRootSlash: false, relative: true}))
-        .pipe(inject(injectStyleFonts, {ignorePath: 'src', addRootSlash: false, relative: true}))
 
         .pipe(gulp.dest(path.build.html))
         .pipe(browserSync.reload({
@@ -463,7 +458,7 @@ gulp.task('iconFontBuild', () =>
 gulp.task('images', () =>
     gulp.src([
         path.src.img,
-        `!${path.src.src}img/uploads/*-pack/**/*.*`
+        `!${path.src.src}img/uploads/*-pack/**/*.*`  // exclude source for mask *-pack/**/*.*
     ])
         .pipe(gulp.dest(path.build.img))
         .pipe(cache(imagemin([
@@ -477,10 +472,10 @@ gulp.task('images', () =>
                 ]
             })
         ],{
-                //verbose: true output status treatment img files
+            verbose: true // output status treatment img files
             }
         )))
-        .pipe(gulp.dest(path.build.img)) //И бросим в build
+        .pipe(gulp.dest(path.build.img))
         .pipe(browserSync.reload({
             stream: true
         }))
@@ -607,10 +602,10 @@ gulp.task('cssLint', () =>
 );
 
 
-gulp.task('serve', () =>
-    browserSync(config)
+gulp.task('serve', () => {
+        browserSync(config);
+    }
 );
-
 
 
 gulp.task('clean', (cb) =>
@@ -622,24 +617,48 @@ gulp.task('clearCache', () =>
 );
 
 gulp.task('watch', function() {
-    gulp.watch(path.watch.sass, gulp.series('pug'));
+    gulp.watch(path.watch.pug, gulp.series('pug'));
+    gulp.watch(path.watch.htaccess, gulp.series('htaccess'));
     gulp.watch(path.watch.html, gulp.series('html'));
     gulp.watch(path.watch.php, gulp.series('php'));
     gulp.watch(path.watch.sass, gulp.series('sass'));
     gulp.watch(path.watch.css, gulp.series('cssLibs'));
     gulp.watch(path.watch.js, gulp.series('scripts'));
     gulp.watch(path.watch.js, gulp.series('scriptsLibs'));
-    gulp.watch(path.watch.js, gulp.series('images'));
+    gulp.watch(path.watch.img, gulp.series('images'));
     gulp.watch(path.watch.fonts, gulp.series('fonts'));
 });
 
 
-gulp.task('assets', gulp.series(['html', 'sass', 'cssLibs', 'scripts', 'scriptsLibs', 'images', 'fonts']));
+gulp.task('valid', gulp.series('validation', 'cssLint', 'check-for-favicon-update'));
+
+gulp.task('injectAll', gulp.series(['inject', 'inject-favicon-markups']));
+
+gulp.task('assets', gulp.series(['htaccess', 'generate-favicon', 'iconFontBuild', 'googleFonts', 'fonts', 'sass', 'cssLibs', 'scriptsLibs', 'copyLibsCSS', 'copyLibsJS', 'scripts', 'spritePNG', 'svgSpriteBuild', 'images', 'html']));
 
 
-gulp.task('build', gulp.series('clean', 'assets', gulp.parallel('inject')));
+gulp.task('build', gulp.series(['clean', gulp.parallel('assets'), 'injectAll']));
 
 
 gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'serve')]));
 
 
+
+/*clear
+ htaccess
+ googleFonts
+ fonts
+ Sass || stylus
+ cssLibs && scriptsLibs
+ copyLibsCSS && copyLibsJS
+ scripts
+
+ pug && html && php
+
+ generate-favicon
+ spritePNG
+ svgSpriteBuild
+ iconFontBuild
+ images
+
+*/

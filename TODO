@@ -1,11 +1,4 @@
-* make chain tasks
-* gulp.task('watch')
-* gulp.task('assets')
-* gulp.task('build')
-* gulp.task('default')
-* pick up manually task run
-* TEST thisk task
-//testing your build files
+
 gulp.task('validation', () =>
     gulp.src(`${path.build.html}**/*.html`)
 
