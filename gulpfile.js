@@ -64,7 +64,7 @@ const path = {
     },
     src: {
         src: 'src/',
-        php: 'src/**/**/*.php',
+        php: 'src/**/**/**/*.php',
         mainHTML: 'src/index.html',
         html: 'src/*.html',
         favi: 'src/*.ico',
@@ -247,7 +247,7 @@ gulp.task('html', () =>
 
 // Deploy html via pug (manually)
 gulp.task('pug', () =>
-   gulp.src('src/pug/pages/*.pug')
+   gulp.src('src/pug/**/**/*.pug')
         .pipe(plumber({ errorHandler: onError }))
         .pipe(includeFiles())
         .pipe(pug({pretty: true}))
@@ -279,7 +279,7 @@ gulp.task('sass', () =>
 
 );
 
-// Deploy css via stylus preprocessor (manually)
+// Deploy css via stylus preprocessor (manually) need make markup project under stylus
 gulp.task('stylus', () =>
     gulp.src('src/stylus/main.styl')
         .pipe(plumber({ errorHandler: onError }))
@@ -633,14 +633,13 @@ gulp.task('watch', function() {
     gulp.watch(path.watch.fonts, gulp.series('fonts'));
 });
 
-/*
+
 gulp.task('assets', gulp.series(['html', 'sass', 'cssLibs', 'scripts', 'scriptsLibs', 'images', 'fonts']));
 
 
 gulp.task('build', gulp.series('clean', 'assets', gulp.parallel('inject')));
 
 
-gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'serve')])); */
-
+gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'serve')]));
 
 

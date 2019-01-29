@@ -17,42 +17,6 @@ gulp.task('cssLint', () =>
         .pipe(stylelint())
 );
 
-gulp.task('htaccess', () =>
-    gulp.src(path.src.htaccess)
-        .pipe(gulp.dest(path.build.htaccess))
-);
-
-gulp.task('stylus', () =>
-    gulp.src('src/stylus/main.styl')
-        .pipe(plumber({ errorHandler: onError }))
-        .pipe(sourcemaps.init())
-        .pipe(stylus({include_css: true}))
-        .pipe(autoprefixer({ browsers: autoprefixerList, cascade: false}))
-        .pipe(gcmq())
-        .pipe(concat('custom2.css'))
-        .pipe(rename({suffix: '.min'}))
-        .pipe(cleanCSS({level: 2}))
-        .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest(path.build.css))
-        .pipe(browserSync.reload({
-            stream: true
-        }))
-
-);
-
-gulp.task('pug', () =>
-   gulp.src('src/pug/pages/*.pug')
-        .pipe(plumber({ errorHandler: onError }))
-        .pipe(includeFiles())
-        .pipe(pug({pretty: true}))
-        /*.pipe(htmlmin({
-         collapseWhitespace: true,
-         removeComments: false
-         }))*/
-        .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, '')) // убираем комментарии <!--DEV ... -->
-        .pipe(gulp.dest(path.build.html))
-        .on('end', browserSync.reload)
-);
 
 // ЗАДАЧА, ВЫПОЛНЯЕМАЯ ТОЛЬКО ВРУЧНУЮ: Отправка в GH pages (ветку gh-pages репозитория)
 gulp.task('deploy', () =>
@@ -70,23 +34,7 @@ gulp.task('sftp', () =>
         }))
 );
 
-// ЗАДАЧА: Сборка PHP
-gulp.task('php', () =>
-     gulp.src(path.src.src + '/**/**/**/*.php')                  // какие файлы обрабатывать (путь из константы, маска имени)
-        .pipe(plumber({ errorHandler: onError }))
-        .pipe(replace(/\n\s*<!--DEV[\s\S]+?-->/gm, ''))         // убираем комментарии <!--DEV ... -->
-        .pipe(gulp.dest(path.build.html))                // записываем файлы (путь из константы)
-);
 
-// Проверка существования файла/папки
-function fileExist(path) {
-    const fs = require('fs');
-    try {
-        fs.statSync(path);
-    } catch(err) {
-        return !(err && err.code === 'ENOENT');
-    }
-}
 
 * comb and beauty and clear code
 * delete unnecessary part of code
