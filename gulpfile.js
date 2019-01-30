@@ -336,6 +336,7 @@ gulp.task('scriptsLibs', () =>
 
 );
 
+// Transfer custom js to build
 gulp.task('scripts', () =>
     gulp.src(path.src.js)
         .pipe(includeFiles())
@@ -355,6 +356,7 @@ gulp.task('scripts', () =>
 
 );
 
+// Include style, js, favicon and markup to main page
 gulp.task('inject', (done) => {
 
     const injectStyles = gulp.src([path.build.injectCSS, path.build.injectFontsCSS], {read: false});
@@ -366,6 +368,7 @@ gulp.task('inject', (done) => {
         /*Inject the favicon markups in your HTML pages. You should run
          this task whenever you modify a page. You can keep this task
          as is or refactor your existing HTML pipeline.*/
+
         .pipe(realFavicon.injectFaviconMarkups(JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).favicon.html_code))
         .pipe(inject(injectStyles, {ignorePath:  'build', addRootSlash: false, relative: false}))
         .pipe(inject(injectScripts, {ignorePath: 'build', addRootSlash: false, relative: false}))
@@ -377,7 +380,7 @@ gulp.task('inject', (done) => {
     done();
 });
 
-
+// Generate sprite from png image and compile png image files
 gulp.task('spritePNG', (done) => {
     const spriteData =
         gulp.src('src/img/uploads/png-sprite-pack/**/*.png')
@@ -398,7 +401,7 @@ gulp.task('spritePNG', (done) => {
     done();
 });
 
-
+// Generate sprite from svg image and compile svg image files
 gulp.task('svgSpriteBuild', () =>
     gulp.src(path.src.svg)
         .pipe(svgmin({
@@ -434,7 +437,7 @@ gulp.task('svgSpriteBuild', () =>
         .pipe(gulp.dest(path.src.svgSprites))
 );
 
-
+// Generate fonts files (eot, svg, ttf, woff) and compile to src/fonts/icons/${fontName} directory
 gulp.task('iconFontBuild', () =>
  	gulp.src(path.src.svg)
  		.pipe(iconfontCss({
@@ -458,7 +461,7 @@ gulp.task('iconFontBuild', () =>
 
 
 
-
+// Copy all generated img files into build directory
 gulp.task('images', () =>
     gulp.src([
         path.src.img,
@@ -486,13 +489,14 @@ gulp.task('images', () =>
         }))
 );
 
-
+// Download and generate css files google fonts
 gulp.task('googleFonts', () =>
     gulp.src('./googlefonts.list')
         .pipe(googleWebFonts(options))
         .pipe(gulp.dest(`${path.build.fonts}google`))
 );
 
+// Copy all fonts include google into build directory
 gulp.task('fonts', () =>
     gulp.src(path.src.fonts)
         .pipe(gulp.dest(path.build.fonts))
@@ -562,11 +566,7 @@ gulp.task('generate-favicon', (done) => {
     });
 });
 
-/*gulp.task('inject-favicon-markups', function() {
-    return gulp.src('build/!*.html')
-        .pipe(realFavicon.injectFaviconMarkups(JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).favicon.html_code))
-    .pipe(gulp.dest(path.build.html));
-});*/
+
 
 
 /*Check for updates on RealFaviconGenerator (think: Apple has just
@@ -584,42 +584,46 @@ gulp.task('check-for-favicon-update', (done) => {
     done();
 });
 
-
+// Copy .htaccess to build dir
 gulp.task('htaccess', () =>
     gulp.src(path.src.htaccess)
         .pipe(gulp.dest(path.build.htaccess))
 );
 
+// Copy robots.txt to build dir
 gulp.task('robotsTXT', () =>
     gulp.src(path.src.robotsTXT)
         .pipe(gulp.dest(path.build.html))
 );
 
-//testing your build files
+//testing your build html files
 gulp.task('validation', () =>
     gulp.src(`${path.build.html}**/*.html`)
 
         .pipe(html5Lint())
 );
-
+//testing your build css files
 gulp.task('cssLint', () =>
     gulp.src(path.src.sass)
         .pipe(stylelint())
 );
 
-
+// reload after change via browserSync
 gulp.task('serve', () => {
         browserSync(config);
     }
 );
 
+// delete build dir
 gulp.task('clean', (cb) =>
     rimraf(path.cleanBuild, cb)
 );
 
+// clear cashe images
 gulp.task('clearCache', () =>
     cache.clearAll()
 );
+
 
 gulp.task('watch', function() {
     gulp.watch(path.watch.pug, gulp.series('pug'));
