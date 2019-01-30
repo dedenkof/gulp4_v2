@@ -26,7 +26,6 @@
     "gulp-htmlmin": "^5.0.1",
     "gulp-iconfont": "^10.0.2",
     "gulp-iconfont-css": "^3.0.0",
-    "gulp-if": "^2.0.2",
     "gulp-imagemin": "^5.0.3",
     "gulp-inject": "^5.0.2",
     "gulp-notify": "^3.2.0",

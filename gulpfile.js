@@ -4,7 +4,6 @@ const gulp = require('gulp'),
     autoprefixer = require('gulp-autoprefixer'),
     concat = require('gulp-concat'),
     useref = require('gulp-useref'),
-    gulpif = require('gulp-if'),
     svgmin = require('gulp-svgmin'),
     iconfont = require('gulp-iconfont'),
     iconfontCss = require('gulp-iconfont-css'),
@@ -73,7 +72,7 @@ const path = {
         css: 'src/css/**/*.css',
         cssLib: 'src/css/libs/**/*.css',
         sass: 'src/sass/**/*.scss',
-        img: 'src/img/**/*.{png,jpg,gif,svg}',
+        img: 'src/img/**/*.{png,xml,jpg,gif,svg,ico,webmanifest}',
         fonts: 'src/fonts/**/*.*',
         fontsGoogle: 'src/fonts/',
         htaccess: 'src/.htaccess',
@@ -125,7 +124,7 @@ const options = {
 const FAVICON_DATA_FILE = 'faviconData.json';
 
 // Fonts name iconFontBuild (fonts from svg icons)
-const fontName = 'iconfont',
+const fontName = 'font-icons',
     runTimestamp = Math.round(Date.now()/1000);
 
 // Config autoprefixer add prefix to the browsers
@@ -238,6 +237,7 @@ gulp.task('html', () =>
      gulp.src(path.src.html)
         .pipe(plumber({ errorHandler: onError }))
         .pipe(includeFiles())
+         //.pipe(realFavicon.injectFaviconMarkups(JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).favicon.html_code))
         /*.pipe(htmlmin({
          collapseWhitespace: true,
          removeComments: false
@@ -308,10 +308,10 @@ gulp.task('cssLibs', () =>
         .pipe(autoprefixer({ browsers: autoprefixerList, cascade: false}))
         .pipe(gcmq())
         //.pipe(concat('libs.css'))
-        //.pipe(rename({suffix: '.min'})) // Добавляем в название файла суфикс .min
-        /*.pipe(cleanCSS({
+        .pipe(rename({suffix: '.min'}))
+        .pipe(cleanCSS({
             level: 2
-        }))*/
+        }))
         .pipe(sourcemaps.write('.', {addComment: false}))
         .pipe(gulp.dest(path.build.css))
         .pipe(browserSync.reload({
@@ -325,9 +325,9 @@ gulp.task('scriptsLibs', () =>
         .pipe(includeFiles())
         .pipe(plumber({ errorHandler: onError }))
         .pipe(sourcemaps.init())
-        //.pipe(minJS()) //Сожмем наш js
-        //.pipe(concat('libs.js'))
-        //.pipe(rename({suffix: '.min'}))
+        .pipe(minJS())
+        ///.pipe(concat('libs.js'))
+        .pipe(rename({suffix: '.min'}))
         .pipe(sourcemaps.write('.', {addComment: false}))
         .pipe(gulp.dest(path.build.js))
         .pipe(browserSync.reload({
@@ -345,7 +345,7 @@ gulp.task('scripts', () =>
             presets: ['@babel/preset-env']
         }))
         .pipe(minJS())
-        .pipe(concat('general.js'))
+        //.pipe(concat('general.js'))
         .pipe(rename({suffix: '.min'}))
         .pipe(sourcemaps.write('.', {addComment: false}))
         .pipe(gulp.dest(path.build.js))
@@ -362,14 +362,14 @@ gulp.task('inject', (done) => {
     const injectScripts = gulp.src(path.build.injectJS, {read: false});
 
     gulp.src(path.src.html)
-        .pipe(flatten({subPath: [1, 1]}))
         .pipe(includeFiles())
         /*Inject the favicon markups in your HTML pages. You should run
          this task whenever you modify a page. You can keep this task
          as is or refactor your existing HTML pipeline.*/
         .pipe(realFavicon.injectFaviconMarkups(JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).favicon.html_code))
-        .pipe(inject(injectStyles, {ignorePath: 'src', addRootSlash: false, relative: true}))
-        .pipe(inject(injectScripts, {ignorePath: 'src', addRootSlash: false, relative: true}))
+        .pipe(inject(injectStyles, {ignorePath:  'build', addRootSlash: false, relative: false}))
+        .pipe(inject(injectScripts, {ignorePath: 'build', addRootSlash: false, relative: false}))
+
         .pipe(gulp.dest(path.build.html))
         .pipe(browserSync.reload({
             stream: true
@@ -479,12 +479,12 @@ gulp.task('images', () =>
             verbose: true // output status treatment img files
             }
         )))
+
         .pipe(gulp.dest(path.build.img))
         .pipe(browserSync.reload({
             stream: true
         }))
 );
-
 
 
 gulp.task('googleFonts', () =>
@@ -562,6 +562,13 @@ gulp.task('generate-favicon', (done) => {
     });
 });
 
+/*gulp.task('inject-favicon-markups', function() {
+    return gulp.src('build/!*.html')
+        .pipe(realFavicon.injectFaviconMarkups(JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).favicon.html_code))
+    .pipe(gulp.dest(path.build.html));
+});*/
+
+
 /*Check for updates on RealFaviconGenerator (think: Apple has just
 released a new Touch icon along with the latest version of iOS).
 Run this task from time to time. Ideally, make it part of your
@@ -630,7 +637,7 @@ gulp.task('watch', function() {
 });
 
 /*-- MANUALLY RUN TASK --*/
-// ['deploy', 'sftp', 'validation', 'cssLint', 'clearCache']
+// ['deploy', 'sftp', 'validation', 'cssLint', 'clearCache', 'check-for-favicon-update']
 
 /*-- GULP RUN ALL TASK CMD GULP --*/
 
@@ -644,6 +651,6 @@ gulp.task('assetsIMG', gulp.series(['spritePNG', 'svgSpriteBuild', 'generate-fav
 
 gulp.task('assetsFONTS', gulp.series(['iconFontBuild', 'googleFonts', 'fonts']));
 
-gulp.task('build', gulp.series(['clean', gulp.parallel('assetsBASE', 'assetsCSS', 'assetsJS', 'assetsFONTS', 'assetsIMG'), 'inject']));
+gulp.task('build', gulp.series(['clean', gulp.parallel('assetsBASE', 'assetsIMG', 'assetsCSS', 'assetsJS', 'assetsFONTS' ), 'inject']));
 
 gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'serve')]));

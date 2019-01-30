@@ -1,11 +1,11 @@
-$icon_font_name:"iconfont";
+$icon_font_name:"font-icons";
 @font-face {
 	font-family:$icon_font_name;
-	src: url('../fonts/icons/iconfont.eot');
-	src: url('../fonts/icons/iconfont.eot?#iefix') format('eot'),
-	url('../fonts/icons/iconfont.woff') format('woff'),
-	url('../fonts/icons/iconfont.ttf') format('truetype'),
-	url('../fonts/icons/iconfont.svg#iconfont') format('svg');
+	src: url('../fonts/icons/font-icons.eot');
+	src: url('../fonts/icons/font-icons.eot?#iefix') format('eot'),
+	url('../fonts/icons/font-icons.woff') format('woff'),
+	url('../fonts/icons/font-icons.ttf') format('truetype'),
+	url('../fonts/icons/font-icons.svg#font-icons') format('svg');
 }
 %icon-avatar-1,
 %icon-avatar,
