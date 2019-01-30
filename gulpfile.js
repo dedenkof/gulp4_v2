@@ -67,7 +67,7 @@ const path = {
         php: 'src/**/**/**/*.php',
         mainHTML: 'src/index.html',
         html: 'src/*.html',
-        favi: 'src/*.ico',
+        robotsTXT: 'src/robots.txt',
         js: 'src/js/*.js',
         jsLib: 'src/js/libs/**/*.js',
         css: 'src/css/**/*.css',
@@ -80,6 +80,7 @@ const path = {
         sprites: 'src/img/sprites/*.png',
         svgSprites: 'src/img/sprites/svg-sprite/',
         svg: 'src/img/uploads/svg-sprite-pack/**/*.svg',
+        favicons: 'src/img/favicons/',
         extSVG: '.svg',
         extPNG: '.png'
     },
@@ -95,7 +96,8 @@ const path = {
         html: 'src/**/*.html',
         php: 'src/**/*.php',
         pug: 'src/pug/**/*.pug',
-        favi: 'src/*.ico',
+        robotsTXT: 'src/robots.txt',
+        favicons: 'src/img/favicons/',
         js: 'src/js/**/*.js',
         css: 'src/css/**/*.scss',
         sass: 'src/sass/**/*.scss',
@@ -362,10 +364,12 @@ gulp.task('inject', (done) => {
     gulp.src(path.src.html)
         .pipe(flatten({subPath: [1, 1]}))
         .pipe(includeFiles())
-
+        /*Inject the favicon markups in your HTML pages. You should run
+         this task whenever you modify a page. You can keep this task
+         as is or refactor your existing HTML pipeline.*/
+        .pipe(realFavicon.injectFaviconMarkups(JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).favicon.html_code))
         .pipe(inject(injectStyles, {ignorePath: 'src', addRootSlash: false, relative: true}))
         .pipe(inject(injectScripts, {ignorePath: 'src', addRootSlash: false, relative: true}))
-
         .pipe(gulp.dest(path.build.html))
         .pipe(browserSync.reload({
             stream: true
@@ -501,8 +505,8 @@ package (see the check-for-favicon-update task below).*/
 
 gulp.task('generate-favicon', (done) => {
     realFavicon.generateFavicon({
-        masterPicture: 'src/img/favicons/ORIGIN_FAVICON' + path.src.extPNG,
-        dest: 'src/img/favicons/',
+        masterPicture: `${path.src.favicons}ORIGIN_FAVICON${path.src.extPNG}`,
+        dest: path.src.favicons,
         iconsPath: 'img/favicons/',
         design: {
             ios: {
@@ -558,16 +562,6 @@ gulp.task('generate-favicon', (done) => {
     });
 });
 
-/*Inject the favicon markups in your HTML pages. You should run
-this task whenever you modify a page. You can keep this task
-as is or refactor your existing HTML pipeline.*/
-
-gulp.task('inject-favicon-markups', () =>
-    gulp.src('build/*.html')
-        .pipe(realFavicon.injectFaviconMarkups(JSON.parse(fs.readFileSync(FAVICON_DATA_FILE)).favicon.html_code))
-        .pipe(gulp.dest(path.build.html))
-);
-
 /*Check for updates on RealFaviconGenerator (think: Apple has just
 released a new Touch icon along with the latest version of iOS).
 Run this task from time to time. Ideally, make it part of your
@@ -589,6 +583,11 @@ gulp.task('htaccess', () =>
         .pipe(gulp.dest(path.build.htaccess))
 );
 
+gulp.task('robotsTXT', () =>
+    gulp.src(path.src.robotsTXT)
+        .pipe(gulp.dest(path.build.html))
+);
+
 //testing your build files
 gulp.task('validation', () =>
     gulp.src(`${path.build.html}**/*.html`)
@@ -606,7 +605,6 @@ gulp.task('serve', () => {
         browserSync(config);
     }
 );
-
 
 gulp.task('clean', (cb) =>
     rimraf(path.cleanBuild, cb)
@@ -627,38 +625,25 @@ gulp.task('watch', function() {
     gulp.watch(path.watch.js, gulp.series('scriptsLibs'));
     gulp.watch(path.watch.img, gulp.series('images'));
     gulp.watch(path.watch.fonts, gulp.series('fonts'));
+    gulp.watch(path.watch.robotsTXT, gulp.series('robotsTXT'));
+    gulp.watch(path.watch.favicons, gulp.series('generate-favicon'));
 });
 
+/*-- MANUALLY RUN TASK --*/
+// ['deploy', 'sftp', 'validation', 'cssLint', 'clearCache']
 
-gulp.task('valid', gulp.series('validation', 'cssLint', 'check-for-favicon-update'));
+/*-- GULP RUN ALL TASK CMD GULP --*/
 
-gulp.task('injectAll', gulp.series(['inject', 'inject-favicon-markups']));
+gulp.task('assetsBASE', gulp.series(['htaccess', 'robotsTXT', 'html']));  // IF need add 'pug', 'php', tasks
 
-gulp.task('assets', gulp.series(['htaccess', 'generate-favicon', 'iconFontBuild', 'googleFonts', 'fonts', 'sass', 'cssLibs', 'scriptsLibs', 'copyLibsCSS', 'copyLibsJS', 'scripts', 'spritePNG', 'svgSpriteBuild', 'images', 'html']));
+gulp.task('assetsCSS', gulp.series(['sass', 'cssLibs', 'copyLibsCSS'])); // IF need add stylus
 
+gulp.task('assetsJS', gulp.series([ 'scriptsLibs', 'copyLibsJS', 'scripts']));
 
-gulp.task('build', gulp.series(['clean', gulp.parallel('assets'), 'injectAll']));
+gulp.task('assetsIMG', gulp.series(['spritePNG', 'svgSpriteBuild', 'generate-favicon', 'images']));
 
+gulp.task('assetsFONTS', gulp.series(['iconFontBuild', 'googleFonts', 'fonts']));
+
+gulp.task('build', gulp.series(['clean', gulp.parallel('assetsBASE', 'assetsCSS', 'assetsJS', 'assetsFONTS', 'assetsIMG'), 'inject']));
 
 gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'serve')]));
-
-
-
-/*clear
- htaccess
- googleFonts
- fonts
- Sass || stylus
- cssLibs && scriptsLibs
- copyLibsCSS && copyLibsJS
- scripts
-
- pug && html && php
-
- generate-favicon
- spritePNG
- svgSpriteBuild
- iconFontBuild
- images
-
-*/
