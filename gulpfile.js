@@ -61,6 +61,30 @@ const path = {
         injectFontsCSS: 'build/fonts/**/*.css',
         injectJS: 'build/js/**/*.js'
     },
+
+    // inject order file (include file optional manually)
+    inject: {
+        css: {
+            googleFonts: 'fonts/google/googlecss/googlefonts.css',
+            bootstrap: 'css/bootstrap/bootstrap.min.css',
+            bootstrapGrid: 'css/bootstrap/bootstrap-grid.min.css',
+            animate: 'css/animate/animate.min.css',
+            custom: 'css/custom.min.css'
+        },
+        js: {
+            jshtml5shiv:{
+                es5: 'js/html5shiv/es5-shim.min.min.js',
+                print: 'js/html5shiv/html5shiv-printshiv.min.min.js',
+                html5shiv: 'js/html5shiv/html5shiv.min.min.js'
+            },
+            jquery: 'js/jquery/jquery.min.js',
+            bootstrap: 'js/bootstrap/bootstrap.min.js',
+            respond: 'js/respond/respond.min.min.js',
+            pageScroll: 'js/scroll2id/PageScroll2id.min.min.js',
+            main: 'js/main.min.js'
+
+        }
+    },
     src: {
         src: 'src/',
         php: 'src/**/**/**/*.php',
@@ -359,7 +383,7 @@ gulp.task('scripts', () =>
 // Include style, js, favicon and markup to main page
 gulp.task('inject', (done) => {
 
-    const injectStyles = gulp.src([path.build.injectCSS, path.build.injectFontsCSS], {read: false});
+    const injectStyles = gulp.src([path.build.injectFontsCSS, path.build.injectCSS], {read: false});
 
     const injectScripts = gulp.src(path.build.injectJS, {read: false});
 
