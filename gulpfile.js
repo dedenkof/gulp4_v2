@@ -65,14 +65,13 @@ const path = {
     // inject order file (include file optional manually)
     inject: {
         css: {
-            googleFonts: 'fonts/google/googlecss/googlefonts.css',
             bootstrap: 'css/bootstrap/bootstrap.min.css',
             bootstrapGrid: 'css/bootstrap/bootstrap-grid.min.css',
             animate: 'css/animate/animate.min.css',
             custom: 'css/custom.min.css'
         },
         js: {
-            jshtml5shiv:{
+            jsHTML5:{
                 es5: 'js/html5shiv/es5-shim.min.min.js',
                 print: 'js/html5shiv/html5shiv-printshiv.min.min.js',
                 html5shiv: 'js/html5shiv/html5shiv.min.min.js'
@@ -383,9 +382,25 @@ gulp.task('scripts', () =>
 // Include style, js, favicon and markup to main page
 gulp.task('inject', (done) => {
 
-    const injectStyles = gulp.src([path.build.injectFontsCSS, path.build.injectCSS], {read: false});
+    const injectStyles = gulp.src([
+        path.inject.css.bootstrap,
+        path.inject.css.bootstrapGrid,
+        path.inject.css.animate,
+        path.build.injectFontsCSS,
+        path.inject.css.custom
 
-    const injectScripts = gulp.src(path.build.injectJS, {read: false});
+    ], {read: false});
+
+    const injectScripts = gulp.src([
+        path.inject.js.jsHTML5.es5,
+        path.inject.js.jsHTML5.print,
+        path.inject.js.jsHTML5.html5shiv,
+        path.inject.js.jquery,
+        path.inject.js.bootstrap,
+        path.inject.js.respond,
+        path.inject.js.pageScroll,
+        path.inject.js.main
+    ], {read: false});
 
     gulp.src(path.src.html)
         .pipe(includeFiles())
@@ -679,6 +694,8 @@ gulp.task('assetsIMG', gulp.series(['spritePNG', 'svgSpriteBuild', 'generate-fav
 
 gulp.task('assetsFONTS', gulp.series(['iconFontBuild', 'googleFonts', 'fonts']));
 
-gulp.task('build', gulp.series(['clean', gulp.parallel('assetsBASE', 'assetsIMG', 'assetsCSS', 'assetsJS', 'assetsFONTS' ), 'inject']));
+gulp.task('build', gulp.series(['clean', gulp.parallel('assetsBASE', 'assetsIMG', 'assetsCSS', 'assetsJS', 'assetsFONTS')]));
 
-gulp.task('default', gulp.series(['build', gulp.parallel('watch', 'serve')]));
+gulp.task('injectFiles', gulp.series('inject'));
+
+gulp.task('default', gulp.series(['build', 'injectFiles', gulp.parallel('watch', 'serve')]));
