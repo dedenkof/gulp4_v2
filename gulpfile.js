@@ -65,22 +65,22 @@ const path = {
     // inject order file (include file optional manually)
     inject: {
         css: {
-            bootstrap: 'css/bootstrap/bootstrap.min.css',
-            bootstrapGrid: 'css/bootstrap/bootstrap-grid.min.css',
-            animate: 'css/animate/animate.min.css',
-            custom: 'css/custom.min.css'
+            bootstrap: 'build/css/bootstrap/bootstrap.min.css',
+            bootstrapGrid: 'build/css/bootstrap/bootstrap-grid.min.css',
+            animate: 'build/css/animate/animate.min.css',
+            custom: 'build/css/custom.min.css'
         },
         js: {
             jsHTML5:{
-                es5: 'js/html5shiv/es5-shim.min.min.js',
-                print: 'js/html5shiv/html5shiv-printshiv.min.min.js',
-                html5shiv: 'js/html5shiv/html5shiv.min.min.js'
+                es5: 'build/js/html5shiv/es5-shim.min.min.js',
+                print: 'build/js/html5shiv/html5shiv-printshiv.min.min.js',
+                html5shiv: 'build/js/html5shiv/html5shiv.min.min.js'
             },
-            jquery: 'js/jquery/jquery.min.js',
-            bootstrap: 'js/bootstrap/bootstrap.min.js',
-            respond: 'js/respond/respond.min.min.js',
-            pageScroll: 'js/scroll2id/PageScroll2id.min.min.js',
-            main: 'js/main.min.js'
+            jquery: 'build/js/jquery/jquery.min.js',
+            bootstrap: 'build/js/bootstrap/bootstrap.min.js',
+            respond: 'build/js/respond/respond.min.min.js',
+            pageScroll: 'build/js/scroll2id/PageScroll2id.min.min.js',
+            main: 'build/js/main.min.js'
 
         }
     },
@@ -383,10 +383,10 @@ gulp.task('scripts', () =>
 gulp.task('inject', (done) => {
 
     const injectStyles = gulp.src([
+        path.build.injectFontsCSS,
         path.inject.css.bootstrap,
         path.inject.css.bootstrapGrid,
         path.inject.css.animate,
-        path.build.injectFontsCSS,
         path.inject.css.custom
 
     ], {read: false});
@@ -696,6 +696,6 @@ gulp.task('assetsFONTS', gulp.series(['iconFontBuild', 'googleFonts', 'fonts']))
 
 gulp.task('build', gulp.series(['clean', gulp.parallel('assetsBASE', 'assetsIMG', 'assetsCSS', 'assetsJS', 'assetsFONTS')]));
 
-gulp.task('injectFiles', gulp.series('inject'));
+// gulp.task('injectFiles', gulp.series('inject'));
 
-gulp.task('default', gulp.series(['build', 'injectFiles', gulp.parallel('watch', 'serve')]));
+gulp.task('default', gulp.series(['build', 'inject', gulp.parallel('watch', 'serve')]));
